@@ -1,7 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation } from '../types';
-import { UserIcon, AuraIcon, LinkIcon } from './icons';
+import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation, AvatarState, AvatarStyle, AvatarTexture } from '../types';
+import { UserIcon, LinkIcon } from './icons';
 import { Visualizer } from './Visualizer';
+import { AuraAvatar } from './AuraAvatar';
+
+interface AvatarSettings {
+  style: AvatarStyle;
+  texture: AvatarTexture;
+}
 
 interface ConversationViewProps {
   transcript: TranscriptEntry[];
@@ -11,100 +17,33 @@ interface ConversationViewProps {
   connectionState: ConnectionState;
   isModelThinking: boolean;
   isCameraOn: boolean;
-  modelExpression: ModelExpression;
+  isModelSpeaking: boolean;
+  avatarState: AvatarState;
+  avatarExpression: ModelExpression;
+  avatarSettings: AvatarSettings;
 }
 
-const AuraAvatar: React.FC<{
-  state: 'thinking' | 'speaking' | 'idle';
-  speakingStream?: MediaStream | null;
-  expression: ModelExpression;
-}> = ({ state, speakingStream, expression }) => {
-  const iconRef = useRef<SVGSVGElement>(null);
-  const animationFrameId = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-
-  useEffect(() => {
-    const iconElement = iconRef.current;
-    if (!iconElement) return;
-
-    // --- State & Expression Management ---
-    // Reset all dynamic classes first
-    iconElement.classList.remove('anim-think', 'expression-positive', 'expression-inquisitive');
-    iconElement.style.transform = 'scale(1)';
-    iconElement.style.transition = 'transform 0.1s ease-out';
-
-    // Apply expression class if not neutral
-    if (expression !== 'neutral') {
-      iconElement.classList.add(`expression-${expression}`);
-    }
-    
-    // Apply state animation/class
-    if (state === 'thinking') {
-      iconElement.classList.add('anim-think');
-    }
-    // Note: 'speaking' state is handled by the audio visualizer effect below
-
-    // --- Audio Visualizer for 'speaking' state ---
-    if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-    sourceRef.current?.disconnect();
-    if(audioContextRef.current?.state !== 'closed') {
-      audioContextRef.current?.close().catch(console.error);
-    }
-    
-    if (state === 'speaking' && speakingStream) {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.8;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      const source = audioContext.createMediaStreamSource(speakingStream);
-      sourceRef.current = source;
-      source.connect(analyser);
-      
-      const draw = () => {
-        animationFrameId.current = requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
-        
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        const scale = 1 + (average / 256) * 0.2; // Max scale of 1.2
-        
-        iconElement.style.transform = `scale(${scale})`;
-      };
-      draw();
-    }
-    
-    return () => {
-      // Cleanup on unmount or when dependencies change
-      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-      sourceRef.current?.disconnect();
-      if(audioContextRef.current?.state !== 'closed') {
-        audioContextRef.current?.close().catch(console.error);
-      }
-      if (iconElement) iconElement.style.transform = 'scale(1)';
-    };
-  }, [state, speakingStream, expression]);
-
-  return <AuraIcon ref={iconRef} className="w-6 h-6 text-[var(--color-focus-ring)]" />;
-};
-
-
-const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: boolean; isSpeaking?: boolean; outputAudioStream?: MediaStream | null; expression?: ModelExpression; citations?: Citation[]; }> = ({ speaker, text, isInterim = false, isSpeaking = false, outputAudioStream, expression = 'neutral', citations }) => {
+const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: boolean; isSpeaking?: boolean; outputAudioStream?: MediaStream | null; expression?: ModelExpression; citations?: Citation[]; avatarSettings: AvatarSettings; }> = ({ speaker, text, isInterim = false, isSpeaking = false, outputAudioStream, expression = 'neutral', citations, avatarSettings }) => {
   const isUser = speaker === 'user';
   
   if (!text) return null;
 
   const bubbleGlowClass = isUser ? 'glass-container-user' : 'glass-container';
+  
+  let avatarState: AvatarState = 'idle';
+  if (isSpeaking) {
+    avatarState = 'speaking';
+  }
 
   return (
     <div className={`flex items-start gap-4 my-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      {!isUser && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] flex items-center justify-center">
-          <AuraAvatar state={isSpeaking ? 'speaking' : 'idle'} speakingStream={outputAudioStream} expression={expression} />
+      {!isUser && <div className="flex-shrink-0 w-10 h-10">
+          <AuraAvatar 
+            state={avatarState} 
+            speakingStream={outputAudioStream} 
+            expression={expression}
+            {...avatarSettings} 
+          />
       </div>}
       <div 
         className={`max-w-xl p-4 rounded-2xl transition-opacity backdrop-blur-[var(--container-backdrop-blur)] border-[var(--color-border)]
@@ -145,22 +84,24 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
   );
 };
 
-const ThinkingIndicator: React.FC = () => (
-  <div className="flex items-start gap-4 my-4 justify-start">
-    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] flex items-center justify-center">
-      <AuraAvatar state="thinking" expression="neutral" />
-    </div>
-    <div className="max-w-xl p-4 rounded-2xl bg-[var(--color-bubble-model-bg)] rounded-bl-none backdrop-blur-[var(--container-backdrop-blur)] border border-[var(--color-border)] glass-container">
-      <div className="flex space-x-1.5 items-center h-[24px]">
-        <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse [animation-delay:-0.3s]"></span>
-        <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse [animation-delay:-0.15s]"></span>
-        <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse"></span>
+const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avatarSettings }) => {
+  return (
+    <div className="flex items-start gap-4 my-4 justify-start">
+      <div className="flex-shrink-0 w-10 h-10">
+        <AuraAvatar state="thinking" expression="neutral" {...avatarSettings} />
+      </div>
+      <div className="max-w-xl p-4 rounded-2xl bg-[var(--color-bubble-model-bg)] rounded-bl-none backdrop-blur-[var(--container-backdrop-blur)] border border-[var(--color-border)] glass-container">
+        <div className="flex space-x-1.5 items-center h-[24px]">
+          <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse [animation-delay:-0.3s]"></span>
+          <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse [animation-delay:-0.15s]"></span>
+          <span className="w-2 h-2 bg-[var(--color-text-secondary)] rounded-full animate-pulse"></span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, outputAudioStream, connectionState, isModelThinking, isCameraOn, modelExpression }) => {
+export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, outputAudioStream, connectionState, isModelThinking, isCameraOn, isModelSpeaking, avatarState, avatarExpression, avatarSettings }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollEnabled = useRef(true);
 
@@ -186,12 +127,18 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
   const hasTranscript = transcript.length > 0 || interimTranscript.user || interimTranscript.model;
   const showPlaceholder = !hasTranscript && (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error');
   const showVisualizer = !hasTranscript && connectionState === 'connected' && stream && !isCameraOn;
-
+  
   return (
     <div ref={scrollRef} className="flex-grow overflow-y-auto pr-4 -mr-4 custom-scrollbar">
        {showPlaceholder && (
         <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-secondary)]">
-          <AuraIcon className="w-24 h-24 mb-4 opacity-70" />
+          <div className="w-24 h-24 mb-4 opacity-90">
+            <AuraAvatar 
+                state={avatarState} 
+                expression={avatarExpression} 
+                {...avatarSettings}
+            />
+          </div>
           <h2 className="text-2xl font-semibold text-[var(--color-text-strong)]">Start a conversation with Aura</h2>
           <p className="mt-2 max-w-md">Press the microphone button below to begin talking.</p>
         </div>
@@ -202,13 +149,30 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
         </div>
       )}
       {transcript.map((entry) => (
-        <MessageBubble key={entry.id} speaker={entry.speaker} text={entry.text} citations={entry.citations} />
+        <MessageBubble 
+            key={entry.id} 
+            speaker={entry.speaker} 
+            text={entry.text} 
+            citations={entry.citations} 
+            expression="neutral"
+            avatarSettings={avatarSettings}
+        />
       ))}
-      {interimTranscript.user && <MessageBubble speaker="user" text={interimTranscript.user} isInterim />}
+      {interimTranscript.user && <MessageBubble speaker="user" text={interimTranscript.user} isInterim avatarSettings={avatarSettings} />}
       
-      {isModelThinking && <ThinkingIndicator />}
+      {isModelThinking && <ThinkingIndicator avatarSettings={avatarSettings} />}
 
-      {interimTranscript.model && <MessageBubble speaker="model" text={interimTranscript.model} isInterim isSpeaking outputAudioStream={outputAudioStream} expression={modelExpression}/>}
+      {interimTranscript.model && (
+          <MessageBubble 
+            speaker="model" 
+            text={interimTranscript.model} 
+            isInterim 
+            isSpeaking={isModelSpeaking} 
+            outputAudioStream={outputAudioStream} 
+            expression={avatarExpression}
+            avatarSettings={avatarSettings}
+        />
+      )}
     </div>
   );
 };

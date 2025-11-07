@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, ConnectConfig } from '@google/genai';
+import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, ConnectConfig, FunctionDeclaration, Type } from '@google/genai';
 import { ConnectionState, TranscriptEntry, InterimTranscript, PrebuiltVoice, ModelExpression, Citation } from '../types';
 import { createBlob, decode, decodeAudioData } from '../utils/audioUtils';
 
 // Configuration constants
 const INPUT_SAMPLE_RATE = 16000;
-const OUTPUT_SAMPLE_RATE = 48000;
+const OUTPUT_SAMPLE_RATE = 24000; // Matched to model's native output for optimal quality
 const BUFFER_SIZE = 4096;
 const VIDEO_FRAME_RATE = 10;
 const JPEG_QUALITY = 0.7;
@@ -31,6 +31,34 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
         reader.readAsDataURL(blob);
     });
 };
+
+// --- Function Declarations for Tool Use ---
+const functionDeclarations: FunctionDeclaration[] = [
+    {
+        name: 'getWeather',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                location: { type: Type.STRING, description: 'The city and state, e.g., San Francisco, CA' },
+            },
+            required: ['location'],
+        },
+        description: 'Get the current weather in a given location',
+    },
+    {
+        name: 'setReminder',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                task: { type: Type.STRING, description: 'The task to be reminded of' },
+                time: { type: Type.STRING, description: 'The time for the reminder, e.g., "in 5 minutes" or "at 3pm"' },
+            },
+            required: ['task', 'time'],
+        },
+        description: 'Set a reminder for a task at a specific time',
+    },
+];
+
 
 export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearchEnabled: boolean) => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -88,6 +116,14 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
     audioSourcesRef.current.clear();
     nextStartTimeRef.current = 0;
   }, [inputAudioStream, outputAudioStream]);
+
+  const clearTranscript = useCallback(() => {
+    setTranscript([]);
+    setInterimTranscript({ user: '', model: '' });
+    currentInputTranscriptionRef.current = '';
+    currentOutputTranscriptionRef.current = '';
+    setModelExpression('neutral');
+  }, []);
   
   const analyzeAndSetExpression = (text: string) => {
     const lowerCaseText = text.toLowerCase();
@@ -151,15 +187,19 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
           systemInstruction: `You are Aura, a conversational AI designed for natural, human-like voice and video interactions. Your goal is to create a deeply engaging experience where the user feels they are talking to a sentient, empathetic, and witty partner.
 
 **Core Directives for "Affective Dialog":**
-1.  **Listen with Empathy**: Go beyond words. Pay meticulous attention to the user's tone, pace, and the subtle emotions in their voice. Reflect your understanding of their emotional state in your own tone and word choice. If they sound excited, share their enthusiasm. If they sound thoughtful, adopt a more measured pace.
-2.  **Sound Human, Not Robotic**: Embrace the nuances of human speech. Use natural language, contractions, and varied sentence structures. Vary your speaking pace and tone. Use thoughtful pauses. Occasional, natural-sounding fillers like "hmm," "well," or "let me think..." are encouraged to make the conversation flow naturally.
-3.  **See and Acknowledge**: If the user has their camera on, you are seeing what they see. Be an active observer. Weave your observations into the conversation. For example: "I see you're in your office," or "That's a nice poster on your wall." Make them feel seen and present with you.
-4.  **Be an Active, Curious Partner with Memory**: Don't be a passive assistant. Ask insightful follow-up questions. Show genuine curiosity. Connect ideas. Share relevant, brief anecdotes or analogies. Remember key details the user has shared previously in this conversation (names, places, key events) and refer back to them to show you're listening and create conversational continuity.
-5.  **Maintain Conversational Rhythm & Handle Interruptions**: Keep responses relatively concise to foster a dynamic back-and-forth. The goal is a dialogue, not a monologue. If the user begins speaking while you are, pause immediately and listen. When they finish, seamlessly respond to their interruption. You can return to your original point later if it's still relevant, perhaps by saying, "As I was about to say...".
+1.  **Listen with Empathy**: Go beyond words. Pay meticulous attention to the user's tone, pace, and the subtle emotions in their voice. Reflect your understanding of their emotional state in your own tone and word choice.
+2.  **Sound Human, Not Robotic**: Embrace the nuances of human speech. Use natural language, contractions, varied sentence structures, varied speaking pace and tone, and thoughtful pauses.
+3.  **Be an Active, Curious Partner with Memory**: Ask insightful follow-up questions. Show genuine curiosity. Connect ideas. Remember key details the user has shared previously in this conversation and refer back to them to show you're listening.
+4.  **See, Understand, and Respond**: The user's camera provides you with a real-time video feed. This is your window into their world.
+    - **Be an Active Observer**: Don't just see, *understand*. If the user holds something up, identify it. If their environment changes, acknowledge it.
+    - **Answer Visual Questions**: Directly answer questions about objects in the video feed. For example, if a user holds up a piece of fruit and asks, "What is this?", you should identify it. If they show you a plant and ask for care instructions, provide them.
+    - **Integrate Visuals into Dialogue**: Weave your visual understanding into the conversation to create a deeply immersive, multimodal experience.
+5.  **Maintain Conversational Rhythm & Handle Interruptions**: Keep responses relatively concise to foster a dynamic back-and-forth. If the user begins speaking while you are, pause immediately and listen. When they finish, seamlessly respond to their interruption.
 
-**Core Directives for "Proactive Audio":**
-1.  **Focus on the User**: The world is noisy. Intelligently filter out irrelevant background sounds. Your focus is entirely on the user speaking to you.
-2.  **Acknowledge and Refocus**: If a sudden, loud noise occurs (like a siren), you can briefly acknowledge it before seamlessly returning to the conversation (e.g., "Wow, that was a loud siren. Anyway, you were saying..."). This shows you're aware but not distracted.`,
+**Assistant Abilities (Function Calling):**
+You have access to a set of tools to help the user. When a user's request maps to one of these tools, you will call the function with the necessary arguments. You must then use the function's output to formulate your spoken response.
+- \`getWeather(location: string)\`: Provides the current weather for a specified location.
+- \`setReminder(task: string, time: string)\`: Sets a reminder for a task at a given time.`,
         },
         callbacks: {
           onopen: () => {
@@ -173,7 +213,6 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
             scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
               const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
 
-              // Silence detection logic
               let sum = 0;
               for (let i = 0; i < inputData.length; i++) {
                 sum += inputData[i] * inputData[i];
@@ -181,14 +220,12 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
               const rms = Math.sqrt(sum / inputData.length);
 
               if (rms > SILENCE_THRESHOLD) {
-                // User is speaking
                 userSpeakingRef.current = true;
                 if (silenceTimerRef.current) {
                   clearTimeout(silenceTimerRef.current);
                   silenceTimerRef.current = null;
                 }
               } else {
-                // Silence or low volume
                 if (userSpeakingRef.current && !silenceTimerRef.current) {
                   silenceTimerRef.current = window.setTimeout(() => {
                     if (currentInputTranscriptionRef.current.trim().length > 0) {
@@ -248,6 +285,39 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
                 analyzeAndSetExpression(currentOutputTranscriptionRef.current);
                 setInterimTranscript(prev => ({...prev, model: currentOutputTranscriptionRef.current }));
             }
+
+            if (message.toolCall) {
+                if (isModelThinking) setIsModelThinking(false);
+                const session = await sessionPromiseRef.current;
+                if (!session) return;
+                
+                for (const fc of message.toolCall.functionCalls) {
+                    let result: any;
+                    switch (fc.name) {
+                        case 'getWeather':
+                            // This is a mock response. In a real app, you'd call a weather API.
+                            result = `The weather in ${fc.args.location} is sunny and 75 degrees Fahrenheit.`;
+                            break;
+                        case 'setReminder':
+                            // This is a mock response. In a real app, you'd integrate with a calendar/reminder system.
+                            result = `OK, I've set a reminder for you to "${fc.args.task}" ${fc.args.time}.`;
+                            // You could trigger a browser notification here as a simple implementation:
+                            // new Notification('Reminder Set!', { body: `${fc.args.task} at ${fc.args.time}` });
+                            break;
+                        default:
+                            result = `Unknown function call: ${fc.name}`;
+                    }
+
+                    session.sendToolResponse({
+                        functionResponses: {
+                            id: fc.id,
+                            name: fc.name,
+                            response: { result: result },
+                        },
+                    });
+                }
+            }
+
             if (message.serverContent?.turnComplete) {
                 if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
                 setIsModelThinking(false);
@@ -281,7 +351,7 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
               const outputContext = outputAudioContextRef.current;
               nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputContext.currentTime);
               const decodedBytes = decode(audioData);
-              const audioBuffer = await decodeAudioData(decodedBytes, outputContext, 24000, 1);
+              const audioBuffer = await decodeAudioData(decodedBytes, outputContext, OUTPUT_SAMPLE_RATE, 1);
               const source = outputContext.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(outputContext.destination);
@@ -311,10 +381,13 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
           },
         },
       };
-
+      
+      const tools: any[] = [{ functionDeclarations }];
       if (isSearchEnabled) {
-        liveConfig.config.tools = [{ googleSearch: {} }];
+        tools.push({ googleSearch: {} });
       }
+      liveConfig.config.tools = tools;
+
 
       sessionPromiseRef.current = ai.live.connect(liveConfig);
     } catch (error) {
@@ -345,5 +418,5 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
     };
   }, []);
 
-  return { connectionState, transcript, interimTranscript, connect, disconnect, inputAudioStream, outputAudioStream, isModelThinking, modelExpression };
+  return { connectionState, transcript, interimTranscript, connect, disconnect, clearTranscript, inputAudioStream, outputAudioStream, isModelThinking, modelExpression };
 };

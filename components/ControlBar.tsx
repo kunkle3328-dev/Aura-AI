@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConnectionState } from '../types';
-import { MicIcon, StopIcon, CameraIcon, CameraOffIcon, EndCallIcon } from './icons';
+import { MicIcon, StopIcon, CameraIcon, CameraOffIcon } from './icons';
 
 interface ControlBarProps {
   connectionState: ConnectionState;
@@ -43,7 +43,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
   return (
     <div className="flex flex-col items-center space-y-3">
-      <div className="flex items-center justify-center space-x-8 w-full">
+      <div className="flex items-center justify-center space-x-8 w-full max-w-xs mx-auto">
         <button
           onClick={onToggleCamera}
           disabled={isCameraDisabled}
@@ -76,17 +76,8 @@ export const ControlBar: React.FC<ControlBarProps> = ({
           </button>
         </div>
         
-        <div className="w-16 h-16 flex items-center justify-center">
-          {isConnected && (
-            <button
-              onClick={onStop}
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-button-danger-bg)] bg-[var(--color-button-danger-bg)] hover:bg-[var(--color-button-danger-hover-bg)]"
-              aria-label="End call"
-            >
-              <EndCallIcon className="w-8 h-8" />
-            </button>
-          )}
-        </div>
+        {/* Placeholder for alignment */}
+        <div className="w-16 h-16"></div>
       </div>
       <p className="text-[var(--color-text-secondary)] text-sm h-5">{getStatusText()}</p>
     </div>

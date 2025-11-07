@@ -65,11 +65,11 @@ export const Visualizer: React.FC<VisualizerProps> = ({ stream, isConversationAc
   return (
     <div ref={visualizerRef} className="relative w-48 h-48 flex items-center justify-center">
       <div 
-        className="w-24 h-24 bg-blue-500 rounded-full transition-transform duration-100 ease-out"
+        className="visualizer-inner w-24 h-24 rounded-full transition-transform duration-100 ease-out"
         style={{ willChange: 'transform' }}
       ></div>
       <div 
-        className="absolute w-32 h-32 bg-blue-400 bg-opacity-30 rounded-full transition-all duration-200 ease-out"
+        className="visualizer-outer absolute w-32 h-32 rounded-full transition-all duration-200 ease-out"
         style={{ willChange: 'transform, opacity' }}
       ></div>
     </div>
