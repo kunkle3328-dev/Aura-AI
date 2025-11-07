@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aura AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        transition: background-color 0.5s ease, color 0.5s ease;
+        text-shadow: var(--color-text-glow-shadow);
+        background-attachment: fixed;
+      }
+
+      /* THEME DEFINITIONS */
+      body.theme-aura-dark {
+        --color-bg-primary: #111827;
+        --color-bg-secondary: #1f2937;
+        --color-bg-tertiary: #374151;
+        --color-text-primary: #f3f4f6;
+        --color-text-secondary: #9ca3af;
+        --color-text-strong: #e5e7eb;
+        --color-text-inverted: #ffffff;
+        --color-border: #374151;
+        --color-accent: #60a5fa;
+        --color-accent-positive: #fcd34d;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #60a5fa;
+        --color-bubble-user-bg: #2563eb;
+        --color-bubble-user-text: #ffffff;
+        --color-bubble-model-bg: #374151;
+        --color-bubble-model-text: #f3f4f6;
+        --color-button-primary-bg: #2563eb;
+        --color-button-primary-hover-bg: #1d4ed8;
+        --color-button-secondary-bg: #374151;
+        --color-button-secondary-hover-bg: #4b5563;
+        --color-button-danger-bg: #dc2626;
+        --color-button-danger-hover-bg: #b91c1c;
+        --color-scrollbar-track: #1f2937;
+        --color-scrollbar-thumb: #4b5563;
+        --color-scrollbar-thumb-hover: #6b7280;
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+        
+        --container-backdrop-blur: 0px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: none;
+        --color-text-glow-shadow: none;
+      }
+      
+      body.theme-neon-matrix {
+        --color-bg-primary: #040806;
+        --color-bg-secondary: #0b1d12;
+        --color-bg-tertiary: #08140b;
+        --color-text-primary: #39ff14;
+        --color-text-secondary: #2aaa0f;
+        --color-text-strong: #90ee90;
+        --color-text-inverted: #000000;
+        --color-border: #1c522a;
+        --color-accent: #39ff14;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #a78bfa;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #39ff14;
+        --color-bubble-user-bg: #1a472a;
+        --color-bubble-user-text: #90ee90;
+        --color-bubble-model-bg: #0b1d12;
+        --color-bubble-model-text: #39ff14;
+        --color-button-primary-bg: #2aaa0f;
+        --color-button-primary-hover-bg: #3fca27;
+        --color-button-secondary-bg: #1c522a;
+        --color-button-secondary-hover-bg: #26733a;
+        --color-button-danger-bg: #e11d48;
+        --color-button-danger-hover-bg: #be123c;
+        --color-scrollbar-track: #0b1d12;
+        --color-scrollbar-thumb: #1c522a;
+        --color-scrollbar-thumb-hover: #26733a;
+        --color-icon-highlight: #90ee90;
+        
+        --container-backdrop-blur: 0px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: none;
+        --color-text-glow-shadow: none;
+      }
+
+      body.theme-arctic-light {
+        --color-bg-primary: #f9fafb;
+        --color-bg-secondary: #ffffff;
+        --color-bg-tertiary: #e5e7eb;
+        --color-text-primary: #1f2937;
+        --color-text-secondary: #6b7280;
+        --color-text-strong: #111827;
+        --color-text-inverted: #ffffff;
+        --color-border: #d1d5db;
+        --color-accent: #0891b2;
+        --color-accent-positive: #f59e0b;
+        --color-accent-empathetic: #6d28d9;
+        --color-accent-celebratory: #f59e0b;
+        --color-focus-ring: #06b6d4;
+        --color-bubble-user-bg: #0891b2;
+        --color-bubble-user-text: #ffffff;
+        --color-bubble-model-bg: #e5e7eb;
+        --color-bubble-model-text: #1f2937;
+        --color-button-primary-bg: #06b6d4;
+        --color-button-primary-hover-bg: #0891b2;
+        --color-button-secondary-bg: #d1d5db;
+        --color-button-secondary-hover-bg: #9ca3af;
+        --color-button-danger-bg: #ef4444;
+        --color-button-danger-hover-bg: #dc2626;
+        --color-scrollbar-track: #f1f5f9;
+        --color-scrollbar-thumb: #cbd5e1;
+        --color-scrollbar-thumb-hover: #94a3b8;
+        --color-icon-highlight: hsla(0,0%,10%,0.7);
+
+        --container-backdrop-blur: 0px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: none;
+        --color-text-glow-shadow: none;
+      }
+
+      body.theme-solar-flare {
+        --color-bg-primary: #1c1917;
+        --color-bg-secondary: #292524;
+        --color-bg-tertiary: #44403c;
+        --color-text-primary: #fcd34d;
+        --color-text-secondary: #fb923c;
+        --color-text-strong: #fef08a;
+        --color-text-inverted: #000000;
+        --color-border: #57534e;
+        --color-accent: #f97316;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #f59e0b;
+        --color-bubble-user-bg: #f97316;
+        --color-bubble-user-text: #1c1917;
+        --color-bubble-model-bg: #44403c;
+        --color-bubble-model-text: #fcd34d;
+        --color-button-primary-bg: #f97316;
+        --color-button-primary-hover-bg: #ea580c;
+        --color-button-secondary-bg: #57534e;
+        --color-button-secondary-hover-bg: #78716c;
+        --color-button-danger-bg: #ef4444;
+        --color-button-danger-hover-bg: #dc2626;
+        --color-scrollbar-track: #292524;
+        --color-scrollbar-thumb: #57534e;
+        --color-scrollbar-thumb-hover: #78716c;
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+        
+        --container-backdrop-blur: 0px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: none;
+        --color-text-glow-shadow: none;
+      }
+      
+      body.theme-cosmic-lilac {
+        --color-bg-primary: #1e1b4b;
+        --color-bg-secondary: #312e81;
+        --color-bg-tertiary: #4338ca;
+        --color-text-primary: #e0e7ff;
+        --color-text-secondary: #a5b4fc;
+        --color-text-strong: #c7d2fe;
+        --color-text-inverted: #ffffff;
+        --color-border: #4f46e5;
+        --color-accent: #c4b5fd;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #e0e7ff;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #a78bfa;
+        --color-bubble-user-bg: #7c3aed;
+        --color-bubble-user-text: #ffffff;
+        --color-bubble-model-bg: #4338ca;
+        --color-bubble-model-text: #e0e7ff;
+        --color-button-primary-bg: #8b5cf6;
+        --color-button-primary-hover-bg: #7c3aed;
+        --color-button-secondary-bg: #4f46e5;
+        --color-button-secondary-hover-bg: #4338ca;
+        --color-button-danger-bg: #e11d48;
+        --color-button-danger-hover-bg: #be123c;
+        --color-scrollbar-track: #312e81;
+        --color-scrollbar-thumb: #4f46e5;
+        --color-scrollbar-thumb-hover: #6366f1;
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+        
+        --container-backdrop-blur: 0px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: none;
+        --color-text-glow-shadow: none;
+      }
+
+      /* ADVANCED THEMES */
+      body.theme-quantum-glow {
+        --color-bg-primary: #090a0f;
+        background-image: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+        --color-bg-secondary: rgba(15, 23, 42, 0.4);
+        --color-bg-tertiary: rgba(28, 52, 70, 0.5);
+        --color-text-primary: #c8d4e1;
+        --color-text-secondary: #82a0b9;
+        --color-text-strong: #e0f2fe;
+        --color-text-inverted: #090a0f;
+        --color-border: rgba(0, 246, 255, 0.2);
+        --color-accent: #00f6ff;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #00f6ff;
+        --color-bubble-user-bg: rgba(0, 115, 255, 0.3);
+        --color-bubble-user-text: #e0f2fe;
+        --color-bubble-model-bg: rgba(28, 52, 70, 0.4);
+        --color-bubble-model-text: #c8d4e1;
+        --color-button-primary-bg: #00f6ff;
+        --color-button-primary-hover-bg: #57f8ff;
+        --color-button-secondary-bg: rgba(0, 246, 255, 0.1);
+        --color-button-secondary-hover-bg: rgba(0, 246, 255, 0.2);
+        --color-button-danger-bg: #f43f5e;
+        --color-button-danger-hover-bg: #e11d48;
+        --color-scrollbar-track: rgba(9, 10, 15, 0.5);
+        --color-scrollbar-thumb: rgba(0, 246, 255, 0.2);
+        --color-scrollbar-thumb-hover: rgba(0, 246, 255, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+        
+        --container-backdrop-blur: 12px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 0 12px 0px var(--color-accent);
+        --color-text-glow-shadow: 0 0 3px rgba(224, 242, 254, 0.5);
+      }
+
+      body.theme-crystal-clear {
+        --color-bg-primary: #eef2f3;
+        background-image: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+        --color-bg-secondary: rgba(255, 255, 255, 0.4);
+        --color-bg-tertiary: rgba(229, 231, 235, 0.5);
+        --color-text-primary: #374151;
+        --color-text-secondary: #6b7280;
+        --color-text-strong: #111827;
+        --color-text-inverted: #ffffff;
+        --color-border: rgba(156, 163, 175, 0.3);
+        --color-accent: #4b5563;
+        --color-accent-positive: #f59e0b;
+        --color-accent-empathetic: #6d28d9;
+        --color-accent-celebratory: #f59e0b;
+        --color-focus-ring: #374151;
+        --color-bubble-user-bg: rgba(55, 65, 81, 0.8);
+        --color-bubble-user-text: #ffffff;
+        --color-bubble-model-bg: rgba(229, 231, 235, 0.6);
+        --color-bubble-model-text: #374151;
+        --color-button-primary-bg: #374151;
+        --color-button-primary-hover-bg: #1f2937;
+        --color-button-secondary-bg: rgba(209, 213, 219, 0.7);
+        --color-button-secondary-hover-bg: rgba(156, 163, 175, 0.7);
+        --color-button-danger-bg: #ef4444;
+        --color-button-danger-hover-bg: #dc2626;
+        --color-scrollbar-track: rgba(235, 237, 238, 0.5);
+        --color-scrollbar-thumb: rgba(209, 213, 219, 1);
+        --color-scrollbar-thumb-hover: rgba(156, 163, 175, 1);
+        --color-icon-highlight: hsla(0,0%,10%,0.7);
+        
+        --container-backdrop-blur: 16px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 4px 12px 0px rgba(55, 65, 81, 0.3);
+        --color-text-glow-shadow: none;
+      }
+
+      body.theme-midnight-sun {
+        --color-bg-primary: #0d0d0d;
+        background-image: radial-gradient(ellipse at bottom, #4d1818 0%, #111 60%);
+        --color-bg-secondary: rgba(28, 25, 23, 0.3);
+        --color-bg-tertiary: rgba(68, 64, 60, 0.4);
+        --color-text-primary: #e0e0e0;
+        --color-text-secondary: #a1a1aa;
+        --color-text-strong: #ffffff;
+        --color-text-inverted: #ffffff;
+        --color-border: rgba(255, 69, 0, 0.25);
+        --color-accent: #ff4500;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #ff4500;
+        --color-bubble-user-bg: rgba(255, 69, 0, 0.4);
+        --color-bubble-user-text: #fef3c7;
+        --color-bubble-model-bg: rgba(40, 40, 40, 0.4);
+        --color-bubble-model-text: #e0e0e0;
+        --color-button-primary-bg: #ff4500;
+        --color-button-primary-hover-bg: #e14d13;
+        --color-button-secondary-bg: rgba(255, 69, 0, 0.1);
+        --color-button-secondary-hover-bg: rgba(255, 69, 0, 0.2);
+        --color-button-danger-bg: #f43f5e;
+        --color-button-danger-hover-bg: #e11d48;
+        --color-scrollbar-track: rgba(13, 13, 13, 0.5);
+        --color-scrollbar-thumb: rgba(255, 69, 0, 0.2);
+        --color-scrollbar-thumb-hover: rgba(255, 69, 0, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+
+        --container-backdrop-blur: 10px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 0 14px 0px var(--color-accent);
+        --color-text-glow-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+      }
+
+      body.theme-emerald-depth {
+        --color-bg-primary: #010d08;
+        background-image: linear-gradient(180deg, #021a0f 0%, #010d08 100%);
+        --color-bg-secondary: rgba(4, 38, 20, 0.25);
+        --color-bg-tertiary: rgba(5, 59, 31, 0.4);
+        --color-text-primary: #b0e0c5;
+        --color-text-secondary: #74a88b;
+        --color-text-strong: #d4f5e2;
+        --color-text-inverted: #010d08;
+        --color-border: rgba(50, 205, 50, 0.3);
+        --color-accent: #32cd32;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #32cd32;
+        --color-bubble-user-bg: rgba(50, 205, 50, 0.3);
+        --color-bubble-user-text: #d4f5e2;
+        --color-bubble-model-bg: rgba(4, 38, 20, 0.4);
+        --color-bubble-model-text: #b0e0c5;
+        --color-button-primary-bg: #32cd32;
+        --color-button-primary-hover-bg: #40e040;
+        --color-button-secondary-bg: rgba(50, 205, 50, 0.15);
+        --color-button-secondary-hover-bg: rgba(50, 205, 50, 0.25);
+        --color-button-danger-bg: #f43f5e;
+        --color-button-danger-hover-bg: #e11d48;
+        --color-scrollbar-track: rgba(1, 13, 8, 0.5);
+        --color-scrollbar-thumb: rgba(50, 205, 50, 0.2);
+        --color-scrollbar-thumb-hover: rgba(50, 205, 50, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.8);
+        
+        --container-backdrop-blur: 12px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 0 12px 0px var(--color-accent);
+        --color-text-glow-shadow: 0 0 4px rgba(176, 224, 197, 0.4);
+      }
+      
+      body.theme-supernova {
+        --color-bg-primary: #0c0b1e;
+        background-image: radial-gradient(ellipse at top, #3a2d6f, #0c0b1e);
+        --color-bg-secondary: rgba(76, 52, 148, 0.2);
+        --color-bg-tertiary: rgba(94, 72, 189, 0.3);
+        --color-text-primary: #d9cfff;
+        --color-text-secondary: #b0a5f0;
+        --color-text-strong: #f0ebff;
+        --color-text-inverted: #ffffff;
+        --color-border: rgba(255, 0, 255, 0.25);
+        --color-accent: #ff00ff;
+        --color-accent-positive: #fef08a;
+        --color-accent-empathetic: #e0e7ff;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #ff00ff;
+        --color-bubble-user-bg: rgba(255, 0, 255, 0.25);
+        --color-bubble-user-text: #f0ebff;
+        --color-bubble-model-bg: rgba(76, 52, 148, 0.4);
+        --color-bubble-model-text: #d9cfff;
+        --color-button-primary-bg: #ff00ff;
+        --color-button-primary-hover-bg: #f000f0;
+        --color-button-secondary-bg: rgba(255, 0, 255, 0.1);
+        --color-button-secondary-hover-bg: rgba(255, 0, 255, 0.2);
+        --color-button-danger-bg: #f43f5e;
+        --color-button-danger-hover-bg: #e11d48;
+        --color-scrollbar-track: rgba(12, 11, 30, 0.5);
+        --color-scrollbar-thumb: rgba(255, 0, 255, 0.2);
+        --color-scrollbar-thumb-hover: rgba(255, 0, 255, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.9);
+        
+        --container-backdrop-blur: 10px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 0 15px 0px var(--color-accent);
+        --color-text-glow-shadow: 0 0 5px rgba(217, 207, 255, 0.3);
+      }
+
+      /* PREMIUM ANIMATED THEMES */
+      @keyframes waveAnimation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      body.theme-aetherium-wave {
+        --color-bg-primary: #020412;
+        background: linear-gradient(-45deg, #020412, #0d0624, #08252e, #231338);
+        background-size: 400% 400%;
+        animation: waveAnimation 25s ease infinite;
+        --color-bg-secondary: rgba(49, 46, 129, 0.2);
+        --color-bg-tertiary: rgba(5, 150, 105, 0.3);
+        --color-text-primary: #c7d2fe;
+        --color-text-secondary: #818cf8;
+        --color-text-strong: #f0f9ff;
+        --color-text-inverted: #ffffff;
+        --color-border: rgba(165, 180, 252, 0.2);
+        --color-accent: #5eead4;
+        --color-accent-positive: #fde047;
+        --color-accent-empathetic: #a5b4fc;
+        --color-accent-celebratory: #fde047;
+        --color-focus-ring: #5eead4;
+        --color-bubble-user-bg: rgba(94, 234, 212, 0.25);
+        --color-bubble-user-text: #f0f9ff;
+        --color-bubble-model-bg: rgba(49, 46, 129, 0.3);
+        --color-bubble-model-text: #c7d2fe;
+        --color-button-primary-bg: #5eead4;
+        --color-button-primary-hover-bg: #99f6e4;
+        --color-button-secondary-bg: rgba(94, 234, 212, 0.1);
+        --color-button-secondary-hover-bg: rgba(94, 234, 212, 0.2);
+        --color-button-danger-bg: #fb7185;
+        --color-button-danger-hover-bg: #f43f5e;
+        --color-scrollbar-track: rgba(2, 4, 18, 0.5);
+        --color-scrollbar-thumb: rgba(94, 234, 212, 0.2);
+        --color-scrollbar-thumb-hover: rgba(94, 234, 212, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.9);
+        
+        --container-backdrop-blur: 20px;
+        --container-border-width: 1px;
+        --color-accent-glow-shadow: 0 0 18px 0px var(--color-accent);
+        --color-text-glow-shadow: 0 0 6px rgba(199, 210, 254, 0.4);
+      }
+
+      /* --- OVERHAULED NEURO-CIRCUIT THEME --- */
+      @keyframes scanline {
+        0% { transform: translateY(-10%); }
+        100% { transform: translateY(110%); }
+      }
+       @keyframes border-glow-pulse {
+        0%, 100% { box-shadow: 0 0 18px 0px var(--glow-color, transparent); }
+        50% { box-shadow: 0 0 28px 4px var(--glow-color, transparent); }
+      }
+      body.theme-neuro-circuit {
+        --color-bg-primary: #010108;
+        overflow: hidden;
+        position: relative;
+      }
+      /* Animated scanline effect */
+      body.theme-neuro-circuit::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 100vh;
+        background: linear-gradient(
+          to bottom,
+          transparent 0%,
+          rgba(0, 110, 255, 0.1) 50%,
+          transparent 100%
+        );
+        opacity: 0.6;
+        animation: scanline 8s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+      }
+      body.theme-neuro-circuit {
+        --royal-blue: #006EFF;
+        --neon-red: #FF0D0D;
+
+        --color-bg-secondary: rgba(5, 10, 30, 0.3);
+        --color-bg-tertiary: rgba(10, 15, 40, 0.4);
+
+        --color-text-primary: #A0B8FF;
+        --color-text-secondary: #5068B0;
+        --color-text-strong: #D0E0FF;
+        --color-text-inverted: #ffffff;
+        
+        --color-border: rgba(0, 110, 255, 0.3);
+
+        /* Main actions (mic) are red */
+        --color-accent: var(--neon-red); 
+        
+        /* Focus rings and AI elements are blue */
+        --color-focus-ring: var(--royal-blue);
+        --color-accent-positive: #89CFF0; /* Light Blue */
+        --color-accent-empathetic: #B0C4DE; /* Soft Blue */
+        --color-accent-celebratory: #00FFFF; /* Cyan */
+        
+        --color-bubble-user-bg: rgba(255, 13, 13, 0.2);
+        --color-bubble-user-text: #FFC0C0;
+        --color-bubble-model-bg: rgba(0, 110, 255, 0.2);
+        --color-bubble-model-text: #A0B8FF;
+        
+        --color-button-primary-bg: var(--neon-red);
+        --color-button-primary-hover-bg: #ff4545;
+        --color-button-secondary-bg: rgba(0, 110, 255, 0.15);
+        --color-button-secondary-hover-bg: rgba(0, 110, 255, 0.25);
+        --color-button-danger-bg: var(--neon-red);
+        --color-button-danger-hover-bg: #ff4545;
+        
+        --color-scrollbar-track: rgba(1, 1, 8, 0.5);
+        --color-scrollbar-thumb: rgba(0, 110, 255, 0.2);
+        --color-scrollbar-thumb-hover: rgba(0, 110, 255, 0.4);
+        --color-icon-highlight: hsla(0,0%,100%,0.9);
+        
+        --container-backdrop-blur: 24px;
+        --container-border-width: 1px;
+        
+        /* Accent glow is red for primary actions */
+        --color-accent-glow-shadow: 0 0 20px 0px var(--color-accent);
+        /* Text glow is blue */
+        --color-text-glow-shadow: 0 0 8px rgba(160, 184, 255, 0.3);
+      }
+      .theme-neuro-circuit .glass-container {
+        --glow-color: rgba(0, 110, 255, 0.7);
+        animation: border-glow-pulse 4s infinite ease-in-out;
+      }
+       .theme-neuro-circuit .glass-container-user {
+        --glow-color: rgba(255, 13, 13, 0.6);
+        animation: border-glow-pulse 4s infinite ease-in-out;
+      }
+
+      /* Custom Scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--color-scrollbar-track);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: var(--color-scrollbar-thumb);
+        border-radius: 4px;
+        border: 2px solid var(--color-scrollbar-track);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: var(--color-scrollbar-thumb-hover);
+      }
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+      }
+
+      /* Avatar Animations */
+      @keyframes pulse-think {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 0.7;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.9;
+        }
+      }
+
+      .anim-think {
+        animation: pulse-think 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      /* Expression Animations */
+      @keyframes bounce-happy {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px) scale(1.1); }
+      }
+
+      @keyframes tilt-inquisitive {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-8deg) translateX(-1px); }
+        75% { transform: rotate(8deg) translateX(1px); }
+      }
+
+      @keyframes empathetic-nod {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(1px); }
+      }
+      @keyframes empathetic-glow {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 0.8; }
+      }
+
+      @keyframes celebratory-sparkle {
+        0%, 100% { transform: scale(0); opacity: 0; }
+        50% { transform: scale(1); opacity: 1; }
+      }
+
+
+      .expression-positive .aura-glow {
+        color: var(--color-accent-positive);
+        opacity: 0.8;
+      }
+      .expression-positive .aura-highlight {
+        transform-origin: 50% 50%;
+        animation: bounce-happy 0.8s ease-in-out;
+      }
+
+      .expression-inquisitive .aura-highlight {
+        transform-origin: bottom center;
+        animation: tilt-inquisitive 2.5s ease-in-out infinite;
+      }
+
+      .expression-empathetic .aura-glow {
+        color: var(--color-accent-empathetic);
+        animation: empathetic-glow 2s ease-in-out infinite;
+      }
+      .expression-empathetic .aura-highlight {
+        transform-origin: 50% 50%;
+        animation: empathetic-nod 2s ease-in-out infinite;
+      }
+
+      .expression-celebratory .aura-sparkle {
+        color: var(--color-accent-celebratory);
+      }
+      .expression-celebratory .sparkle-1 { animation: celebratory-sparkle 0.8s ease-out 0s; }
+      .expression-celebratory .sparkle-2 { animation: celebratory-sparkle 0.8s ease-out 0.2s; }
+      .expression-celebratory .sparkle-3 { animation: celebratory-sparkle 0.8s ease-out 0.4s; }
+
+
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
