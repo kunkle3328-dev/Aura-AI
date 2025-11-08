@@ -3,6 +3,7 @@ import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpr
 import { UserIcon, LinkIcon } from './icons';
 import { Visualizer } from './Visualizer';
 import { AuraAvatar } from './AuraAvatar';
+import { TalkingAvatar } from './TalkingAvatar';
 
 interface AvatarSettings {
   style: AvatarStyle;
@@ -37,15 +38,21 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
 
   return (
     <div className={`flex items-start gap-4 my-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      {!isUser && <div className="flex-shrink-0 w-10 h-10">
-          <AuraAvatar
-            state={avatarState}
-            speakingStream={outputAudioStream}
-            expression={expression}
-            form={avatarSettings.style}
-            texture={avatarSettings.texture}
-          />
-      </div>}
+      {!isUser && (
+        <div className="flex-shrink-0 w-10 h-10">
+          {avatarSettings.style === 'talking' ? (
+            <TalkingAvatar outputAudioStream={outputAudioStream} />
+          ) : (
+            <AuraAvatar
+              state={avatarState}
+              speakingStream={outputAudioStream}
+              expression={expression}
+              form={avatarSettings.style}
+              texture={avatarSettings.texture}
+            />
+          )}
+        </div>
+      )}
       <div 
         className={`max-w-xl p-4 rounded-2xl transition-opacity backdrop-blur-[var(--container-backdrop-blur)] border-[var(--color-border)]
         border-b-[var(--container-border-width)] border-r-[var(--container-border-width)] ${bubbleGlowClass}
@@ -89,12 +96,16 @@ const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avata
   return (
     <div className="flex items-start gap-4 my-4 justify-start">
       <div className="flex-shrink-0 w-10 h-10">
-        <AuraAvatar
-          state="thinking"
-          expression="neutral"
-          form={avatarSettings.style}
-          texture={avatarSettings.texture}
-        />
+        {avatarSettings.style === 'talking' ? (
+          <TalkingAvatar outputAudioStream={null} />
+        ) : (
+          <AuraAvatar
+            state="thinking"
+            expression="neutral"
+            form={avatarSettings.style}
+            texture={avatarSettings.texture}
+          />
+        )}
       </div>
       <div className="max-w-xl p-4 rounded-2xl bg-[var(--color-bubble-model-bg)] rounded-bl-none backdrop-blur-[var(--container-backdrop-blur)] border border-[var(--color-border)] glass-container">
         <div className="flex space-x-1.5 items-center h-[24px]">
@@ -139,12 +150,16 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
        {showPlaceholder && (
         <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-secondary)]">
           <div className="w-24 h-24 mb-4 opacity-90">
-            <AuraAvatar
+            {avatarSettings.style === 'talking' ? (
+              <TalkingAvatar outputAudioStream={outputAudioStream} />
+            ) : (
+              <AuraAvatar
                 state={avatarState}
                 expression={avatarExpression}
                 form={avatarSettings.style}
                 texture={avatarSettings.texture}
-            />
+              />
+            )}
           </div>
           <h2 className="text-2xl font-semibold text-[var(--color-text-strong)]">Start a conversation with Aura</h2>
           <p className="mt-2 max-w-md">Press the microphone button below to begin talking.</p>
