@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation, AvatarState, AvatarStyle, AvatarTexture } from '../types';
+import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation, AvatarState, AvatarStyle, AvatarTexture, AvatarShape } from '../types';
 import { UserIcon, LinkIcon } from './icons';
 import { Visualizer } from './Visualizer';
 import { AuraAvatar } from './AuraAvatar';
@@ -8,6 +8,8 @@ import { TalkingAvatar } from './TalkingAvatar';
 interface AvatarSettings {
   style: AvatarStyle;
   texture: AvatarTexture;
+  shape: AvatarShape;
+  color: string;
 }
 
 interface ConversationViewProps {
@@ -41,7 +43,11 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
       {!isUser && (
         <div className="flex-shrink-0 w-10 h-10">
           {avatarSettings.style === 'talking' ? (
-            <TalkingAvatar outputAudioStream={outputAudioStream} />
+            <TalkingAvatar
+              outputAudioStream={outputAudioStream}
+              shape={avatarSettings.shape}
+              color={avatarSettings.color}
+            />
           ) : (
             <AuraAvatar
               state={avatarState}
@@ -97,7 +103,11 @@ const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avata
     <div className="flex items-start gap-4 my-4 justify-start">
       <div className="flex-shrink-0 w-10 h-10">
         {avatarSettings.style === 'talking' ? (
-          <TalkingAvatar outputAudioStream={null} />
+          <TalkingAvatar
+            outputAudioStream={null}
+            shape={avatarSettings.shape}
+            color={avatarSettings.color}
+          />
         ) : (
           <AuraAvatar
             state="thinking"
@@ -151,7 +161,11 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
         <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-secondary)]">
           <div className="w-24 h-24 mb-4 opacity-90">
             {avatarSettings.style === 'talking' ? (
-              <TalkingAvatar outputAudioStream={outputAudioStream} />
+              <TalkingAvatar
+                outputAudioStream={outputAudioStream}
+                shape={avatarSettings.shape}
+                color={avatarSettings.color}
+              />
             ) : (
               <AuraAvatar
                 state={avatarState}
