@@ -84,7 +84,13 @@ export const AVATAR_STYLES: { id: AvatarStyle; name: string }[] = [
   { id: 'crystal', name: 'Crystal' },
   { id: 'orb', name: 'Orb' },
   { id: 'circuit', name: 'Circuit' },
-  { id: 'talking', name: 'Talking' },
+  { id: 'talking', name: '3D Head' },
+];
+
+export type AvatarShape = 'sphere' | 'cube';
+export const AVATAR_SHAPES: { id: AvatarShape; name: string }[] = [
+  { id: 'sphere', name: 'Sphere' },
+  { id: 'cube', name: 'Cube' },
 ];
 
 export type AvatarTexture = 'nebula' | 'matrix' | 'energy' | 'circuit' | 'glitch' | 'binary' | 'plasma';

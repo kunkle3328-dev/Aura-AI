@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AvatarStyle, AVATAR_STYLES, AvatarTexture, AVATAR_TEXTURES } from '../types';
+import { AvatarStyle, AVATAR_STYLES, AvatarTexture, AVATAR_TEXTURES, AvatarShape, AVATAR_SHAPES } from '../types';
 import { CheckIcon } from './icons';
 
 interface AvatarCustomizationPanelProps {
@@ -9,6 +9,10 @@ interface AvatarCustomizationPanelProps {
   onStyleChange: (style: AvatarStyle) => void;
   currentTexture: AvatarTexture;
   onTextureChange: (texture: AvatarTexture) => void;
+  currentShape: AvatarShape;
+  onShapeChange: (shape: AvatarShape) => void;
+  currentColor: string;
+  onColorChange: (color: string) => void;
 }
 
 const CustomizationSection: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
@@ -27,6 +31,10 @@ export const AvatarCustomizationPanel: React.FC<AvatarCustomizationPanelProps> =
   onStyleChange,
   currentTexture,
   onTextureChange,
+  currentShape,
+  onShapeChange,
+  currentColor,
+  onColorChange,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +82,34 @@ export const AvatarCustomizationPanel: React.FC<AvatarCustomizationPanelProps> =
             </button>
           ))}
         </CustomizationSection>
+
+        {currentStyle === 'talking' && (
+          <>
+            <CustomizationSection title="3D Shape">
+              {AVATAR_SHAPES.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onShapeChange(shape.id)}
+                  className={`p-2 rounded-lg text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-secondary)] focus:ring-[var(--color-focus-ring)]
+                    ${currentShape === shape.id ? 'bg-[var(--color-accent)] text-[var(--color-text-inverted)]' : 'bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-border)]'}
+                  `}
+                >
+                  {shape.name}
+                </button>
+              ))}
+            </CustomizationSection>
+            <CustomizationSection title="3D Color">
+              <div className="col-span-3">
+                <input
+                  type="color"
+                  value={currentColor}
+                  onChange={(e) => onColorChange(e.target.value)}
+                  className="w-full h-10 p-1 bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] rounded-lg cursor-pointer"
+                />
+              </div>
+            </CustomizationSection>
+          </>
+        )}
       </div>
     </div>
   );

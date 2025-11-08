@@ -3,7 +3,7 @@ import { useGeminiLive } from './hooks/useGeminiLive';
 import { ConversationView } from './components/ConversationView';
 import { ControlBar } from './components/ControlBar';
 import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon } from './components/icons';
-import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture } from './types';
+import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture, AvatarShape } from './types';
 import { VoiceSelector } from './components/VoiceSelector';
 import { VideoFeed } from './components/VideoFeed';
 import { ThemeSelector } from './components/ThemeSelector';
@@ -19,6 +19,8 @@ const App: React.FC = () => {
   // Avatar customization state
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('talking');
   const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
+  const [avatarShape, setAvatarShape] = useState<AvatarShape>('sphere');
+  const [avatarColor, setAvatarColor] = useState<string>('#0099ff');
 
 
   useEffect(() => {
@@ -78,6 +80,8 @@ const App: React.FC = () => {
   const avatarSettings = {
     style: avatarStyle,
     texture: avatarTexture,
+    shape: avatarShape,
+    color: avatarColor,
   };
 
   return (
@@ -121,13 +125,17 @@ const App: React.FC = () => {
             >
               <CustomizeIcon className="w-6 h-6" />
             </button>
-            <AvatarCustomizationPanel 
+            <AvatarCustomizationPanel
               isOpen={isCustomizationPanelOpen}
               onClose={() => setIsCustomizationPanelOpen(false)}
               currentStyle={avatarStyle}
               onStyleChange={setAvatarStyle}
               currentTexture={avatarTexture}
               onTextureChange={setAvatarTexture}
+              currentShape={avatarShape}
+              onShapeChange={setAvatarShape}
+              currentColor={avatarColor}
+              onColorChange={setAvatarColor}
             />
           </div>
           <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
