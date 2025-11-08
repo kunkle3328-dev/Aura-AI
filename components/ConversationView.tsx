@@ -38,11 +38,12 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
   return (
     <div className={`flex items-start gap-4 my-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && <div className="flex-shrink-0 w-10 h-10">
-          <AuraAvatar 
-            state={avatarState} 
-            speakingStream={outputAudioStream} 
+          <AuraAvatar
+            state={avatarState}
+            speakingStream={outputAudioStream}
             expression={expression}
-            {...avatarSettings} 
+            form={avatarSettings.style}
+            texture={avatarSettings.texture}
           />
       </div>}
       <div 
@@ -88,7 +89,12 @@ const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avata
   return (
     <div className="flex items-start gap-4 my-4 justify-start">
       <div className="flex-shrink-0 w-10 h-10">
-        <AuraAvatar state="thinking" expression="neutral" {...avatarSettings} />
+        <AuraAvatar
+          state="thinking"
+          expression="neutral"
+          form={avatarSettings.style}
+          texture={avatarSettings.texture}
+        />
       </div>
       <div className="max-w-xl p-4 rounded-2xl bg-[var(--color-bubble-model-bg)] rounded-bl-none backdrop-blur-[var(--container-backdrop-blur)] border border-[var(--color-border)] glass-container">
         <div className="flex space-x-1.5 items-center h-[24px]">
@@ -133,10 +139,11 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
        {showPlaceholder && (
         <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-secondary)]">
           <div className="w-24 h-24 mb-4 opacity-90">
-            <AuraAvatar 
-                state={avatarState} 
-                expression={avatarExpression} 
-                {...avatarSettings}
+            <AuraAvatar
+                state={avatarState}
+                expression={avatarExpression}
+                form={avatarSettings.style}
+                texture={avatarSettings.texture}
             />
           </div>
           <h2 className="text-2xl font-semibold text-[var(--color-text-strong)]">Start a conversation with Aura</h2>

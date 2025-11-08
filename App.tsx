@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
 
   // Avatar customization state
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('crystal');
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('talking');
   const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
 
 
