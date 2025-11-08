@@ -1,15 +1,28 @@
 import React from 'react';
 import { ConnectionState } from '../types';
 import { MicIcon, StopIcon, CameraIcon, CameraOffIcon } from './icons';
-
+/**
+ * Interface for the props of the ControlBar component.
+ */
 interface ControlBarProps {
+  /** The current state of the connection. */
   connectionState: ConnectionState;
+  /** Callback function to start the connection. */
   onStart: () => void;
+  /** Callback function to stop the connection. */
   onStop: () => void;
+  /** Whether the camera is currently on. */
   isCameraOn: boolean;
+  /** Callback function to toggle the camera. */
   onToggleCamera: () => void;
 }
-
+/**
+ * A component that provides controls for the user to start and stop the conversation,
+ * as well as toggle the camera. It also displays the current connection status.
+ *
+ * @param {ControlBarProps} props The props for the component.
+ * @returns {React.ReactElement} The rendered control bar.
+ */
 export const ControlBar: React.FC<ControlBarProps> = ({
   connectionState,
   onStart,
@@ -19,7 +32,11 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 }) => {
   const isConnecting = connectionState === 'connecting';
   const isConnected = connectionState === 'connected';
-
+  /**
+   * Returns the appropriate status text based on the current connection state.
+   *
+   * @returns {string} The status text.
+   */
   const getStatusText = () => {
     switch (connectionState) {
       case 'idle':

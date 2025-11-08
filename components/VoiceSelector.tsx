@@ -1,13 +1,23 @@
 
 import React from 'react';
 import { PrebuiltVoice, PREBUILT_VOICES } from '../types';
-
+/**
+ * Interface for the props of the VoiceSelector component.
+ */
 interface VoiceSelectorProps {
+  /** The currently selected voice. */
   selectedVoice: PrebuiltVoice;
+  /** Callback function to be called when a new voice is selected. */
   onVoiceChange: (voice: PrebuiltVoice) => void;
+  /** Whether the voice selector is disabled. */
   disabled: boolean;
 }
-
+/**
+ * A component that allows the user to select a prebuilt voice for the model's speech.
+ *
+ * @param {VoiceSelectorProps} props The props for the component.
+ * @returns {React.ReactElement} The rendered voice selector.
+ */
 export const VoiceSelector: React.FC<VoiceSelectorProps> = ({ selectedVoice, onVoiceChange, disabled }) => {
   return (
     <div className="flex items-center space-x-2">

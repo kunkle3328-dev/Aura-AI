@@ -1,24 +1,46 @@
 import React, { useEffect, useRef } from 'react';
 import { ModelExpression, AvatarState, AvatarStyle, AvatarTexture } from '../types';
-
+/**
+ * Interface for the props of the AuraAvatar component.
+ */
 interface AuraAvatarProps {
+  /** The current state of the avatar (e.g., 'idle', 'speaking', 'listening'). */
   state: AvatarState;
+  /** The current expression of the model (e.g., 'neutral', 'celebratory'). */
   expression: ModelExpression;
+  /** The audio stream to use for lip-syncing when the avatar is speaking. */
   speakingStream?: MediaStream | null;
+  /** The overall style of the avatar. */
   form: AvatarStyle;
+  /** The texture to apply to the avatar. */
   texture: AvatarTexture;
 }
-
+/**
+ * A 2D CSS-based animated avatar that represents the Aura AI.
+ * It changes its appearance based on the application's state and can visualize
+ * audio output through pupil dilation.
+ *
+ * @param {AuraAvatarProps} props The props for the component.
+ * @returns {React.ReactElement} The rendered AuraAvatar component.
+ */
 export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speakingStream, form, texture }) => {
+  /** Reference to the pupil DOM element for animation. */
   const pupilRef = useRef<HTMLDivElement>(null);
+  /** Reference to the Web Audio API AudioContext. */
   const audioContextRef = useRef<AudioContext | null>(null);
+  /** Reference to the Web Audio API AnalyserNode. */
   const analyserRef = useRef<AnalyserNode | null>(null);
+  /** Reference to the audio source node. */
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  /** Reference to the requestAnimationFrame ID for cleanup. */
   const animationFrameId = useRef<number | null>(null);
   
   useEffect(() => {
     const pupilElement = pupilRef.current;
-
+    /**
+     * Cleans up all audio-related resources.
+     * Stops the animation frame loop, disconnects audio nodes, and closes the audio context.
+     */
     const cleanupAudio = () => {
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
       sourceRef.current?.disconnect();
@@ -47,7 +69,9 @@ export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speak
       
       sourceRef.current = audioContextRef.current.createMediaStreamSource(speakingStream);
       sourceRef.current.connect(analyserRef.current);
-      
+      /**
+       * The animation loop that updates the pupil scale based on audio frequency data.
+       */
       const draw = () => {
         animationFrameId.current = requestAnimationFrame(draw);
         if (!analyserRef.current || !pupilElement) return;

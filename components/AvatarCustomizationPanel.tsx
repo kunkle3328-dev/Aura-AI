@@ -1,20 +1,37 @@
 import React, { useEffect, useRef } from 'react';
 import { AvatarStyle, AVATAR_STYLES, AvatarTexture, AVATAR_TEXTURES, AvatarShape, AVATAR_SHAPES } from '../types';
 import { CheckIcon } from './icons';
-
+/**
+ * Interface for the props of the AvatarCustomizationPanel component.
+ */
 interface AvatarCustomizationPanelProps {
+  /** Whether the panel is open. */
   isOpen: boolean;
+  /** Callback function to close the panel. */
   onClose: () => void;
+  /** The current style of the avatar. */
   currentStyle: AvatarStyle;
+  /** Callback function to change the avatar style. */
   onStyleChange: (style: AvatarStyle) => void;
+  /** The current texture of the avatar's iris. */
   currentTexture: AvatarTexture;
+  /** Callback function to change the avatar's iris texture. */
   onTextureChange: (texture: AvatarTexture) => void;
+  /** The current 3D shape of the avatar. */
   currentShape: AvatarShape;
+  /** Callback function to change the avatar's 3D shape. */
   onShapeChange: (shape: AvatarShape) => void;
+  /** The current 3D color of the avatar. */
   currentColor: string;
+  /** Callback function to change the avatar's 3D color. */
   onColorChange: (color: string) => void;
 }
-
+/**
+ * A component that renders a section with a title for the customization panel.
+ *
+ * @param {{ title: string, children: React.ReactNode }} props The props for the component.
+ * @returns {React.ReactElement} The rendered section.
+ */
 const CustomizationSection: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <div>
     <h3 className="px-2 text-xs font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">{title}</h3>
@@ -23,7 +40,13 @@ const CustomizationSection: React.FC<{ title: string, children: React.ReactNode 
     </div>
   </div>
 );
-
+/**
+ * A panel that allows the user to customize the appearance of the avatar.
+ * It provides options to change the avatar's style, texture, shape, and color.
+ *
+ * @param {AvatarCustomizationPanelProps} props The props for the component.
+ * @returns {React.ReactElement | null} The rendered panel or null if it is not open.
+ */
 export const AvatarCustomizationPanel: React.FC<AvatarCustomizationPanelProps> = ({
   isOpen,
   onClose,
@@ -37,7 +60,9 @@ export const AvatarCustomizationPanel: React.FC<AvatarCustomizationPanelProps> =
   onColorChange,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
-
+  /**
+   * Effect hook to handle clicks outside the panel to close it.
+   */
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {

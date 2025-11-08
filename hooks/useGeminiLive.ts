@@ -4,19 +4,33 @@ import { ConnectionState, TranscriptEntry, InterimTranscript, PrebuiltVoice, Mod
 import { createBlob, decode, decodeAudioData } from '../utils/audioUtils';
 
 // Configuration constants
+/** The sample rate for input audio. */
 const INPUT_SAMPLE_RATE = 16000;
-const OUTPUT_SAMPLE_RATE = 24000; // Matched to model's native output for optimal quality
+/** The sample rate for output audio, matched to the model's native output. */
+const OUTPUT_SAMPLE_RATE = 24000;
+/** The buffer size for the script processor node. */
 const BUFFER_SIZE = 4096;
+/** The frame rate for video streaming. */
 const VIDEO_FRAME_RATE = 10;
+/** The quality for JPEG compression of video frames. */
 const JPEG_QUALITY = 0.7;
-const SILENCE_THRESHOLD = 0.01; // RMS threshold for detecting silence
-const SILENCE_DURATION_MS = 800; // Time in ms of silence to trigger model thinking
-
+/** The RMS threshold for detecting silence in the audio input. */
+const SILENCE_THRESHOLD = 0.01;
+/** The duration of silence in milliseconds that triggers the model to think. */
+const SILENCE_DURATION_MS = 800;
+/** Keywords that trigger a positive expression from the model. */
 const POSITIVE_KEYWORDS = ['great', 'wonderful', 'awesome', 'fantastic', 'excellent', 'love that', 'amazing', 'perfect'];
+/** Keywords that trigger an empathetic expression from the model. */
 const EMPATHETIC_KEYWORDS = ['sad', 'tough', 'hard', 'sorry to hear', 'understand', 'difficult'];
+/** Keywords that trigger a celebratory expression from the model. */
 const CELEBRATORY_KEYWORDS = ['congratulations', 'hooray', 'congrats', 'fantastic', 'celebrate', 'well done'];
 
-// Helper to convert a blob to a base64 string
+/**
+ * Converts a Blob to a base64 string.
+ *
+ * @param {Blob} blob The Blob to convert.
+ * @returns {Promise<string>} A promise that resolves with the base64 string.
+ */
 const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -32,7 +46,10 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-// --- Function Declarations for Tool Use ---
+/**
+ * Function declarations for the tools that the model can use.
+ * @type {FunctionDeclaration[]}
+ */
 const functionDeclarations: FunctionDeclaration[] = [
     {
         name: 'getWeather',
@@ -59,7 +76,25 @@ const functionDeclarations: FunctionDeclaration[] = [
     },
 ];
 
-
+/**
+ * A custom hook to manage a live conversation with the Gemini API.
+ *
+ * @param {PrebuiltVoice} voice The prebuilt voice to use for the model's speech.
+ * @param {boolean} isCameraOn Whether the user's camera is on.
+ * @param {boolean} isSearchEnabled Whether web search is enabled for the model.
+ * @returns {{
+ *  connectionState: ConnectionState;
+ *  transcript: TranscriptEntry[];
+ *  interimTranscript: InterimTranscript;
+ *  connect: () => Promise<void>;
+ *  disconnect: () => Promise<void>;
+ *  clearTranscript: () => void;
+ *  inputAudioStream: MediaStream | null;
+ *  outputAudioStream: MediaStream | null;
+ *  isModelThinking: boolean;
+ *  modelExpression: ModelExpression;
+ * }} The state and functions for managing the conversation.
+ */
 export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearchEnabled: boolean) => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -84,7 +119,9 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
   const videoStreamIntervalRef = useRef<number | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
-
+  /**
+   * Cleans up all resources used by the hook.
+   */
   const cleanup = useCallback(() => {
     inputAudioContextRef.current?.close().catch(console.error);
     outputAudioContextRef.current?.close().catch(console.error);
@@ -116,7 +153,9 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
     audioSourcesRef.current.clear();
     nextStartTimeRef.current = 0;
   }, [inputAudioStream, outputAudioStream]);
-
+  /**
+   * Clears the transcript of the conversation.
+   */
   const clearTranscript = useCallback(() => {
     setTranscript([]);
     setInterimTranscript({ user: '', model: '' });
@@ -124,7 +163,11 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
     currentOutputTranscriptionRef.current = '';
     setModelExpression('neutral');
   }, []);
-  
+  /**
+   * Analyzes the model's speech and sets an appropriate expression.
+   *
+   * @param {string} text The text to analyze.
+   */
   const analyzeAndSetExpression = (text: string) => {
     const lowerCaseText = text.toLowerCase();
     if (CELEBRATORY_KEYWORDS.some(kw => lowerCaseText.includes(kw))) {
@@ -139,7 +182,9 @@ export const useGeminiLive = (voice: PrebuiltVoice, isCameraOn: boolean, isSearc
       setModelExpression('neutral');
     }
   };
-
+  /**
+   * Connects to the Gemini API and starts the conversation.
+   */
   const connect = useCallback(async () => {
     if (connectionState !== 'idle' && connectionState !== 'closed' && connectionState !== 'error') return;
 
@@ -396,7 +441,9 @@ You have access to a set of tools to help the user. When a user's request maps t
       cleanup();
     }
   }, [connectionState, cleanup, voice, isModelThinking, isCameraOn, isSearchEnabled]);
-  
+  /**
+   * Disconnects from the Gemini API and cleans up resources.
+   */
   const disconnect = useCallback(async () => {
     if (sessionPromiseRef.current) {
         try {
