@@ -79,11 +79,12 @@ export type ModelExpression = 'neutral' | 'positive' | 'inquisitive' | 'empathet
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
 // -- AVATAR CUSTOMIZATION --
-export type AvatarStyle = 'crystal' | 'orb' | 'circuit';
+export type AvatarStyle = 'crystal' | 'orb' | 'circuit' | 'talking';
 export const AVATAR_STYLES: { id: AvatarStyle; name: string }[] = [
   { id: 'crystal', name: 'Crystal' },
   { id: 'orb', name: 'Orb' },
   { id: 'circuit', name: 'Circuit' },
+  { id: 'talking', name: 'Talking' },
 ];
 
 export type AvatarTexture = 'nebula' | 'matrix' | 'energy' | 'circuit' | 'glitch' | 'binary' | 'plasma';
