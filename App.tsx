@@ -9,20 +9,66 @@ import { VideoFeed } from './components/VideoFeed';
 import { ThemeSelector } from './components/ThemeSelector';
 import { AvatarCustomizationPanel } from './components/AvatarCustomizationPanel';
 
+/**
+ * The main application component for Aura AI.
+ * It manages the overall state of the application, including voice selection, theme,
+ * camera and search settings, avatar customization, and the connection to the Gemini API.
+ *
+ * @returns {React.ReactElement} The rendered application UI.
+ */
 const App: React.FC = () => {
+  /**
+   * State for the selected prebuilt voice for the model's speech.
+   * @type {[PrebuiltVoice, React.Dispatch<React.SetStateAction<PrebuiltVoice>>]}
+   */
   const [voice, setVoice] = useState<PrebuiltVoice>('Puck');
+    /**
+   * State for the current UI theme.
+   * @type {[Theme, React.Dispatch<React.SetStateAction<Theme>>]}
+   */
   const [theme, setTheme] = useState<Theme>('theme-neuro-circuit');
+  /**
+   * State to control whether the user's camera is on.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isCameraOn, setIsCameraOn] = useState(false);
+    /**
+   * State to control whether web search is enabled for the model.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
+    /**
+   * State to control the visibility of the avatar customization panel.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
 
   // Avatar customization state
+    /**
+   * State for the avatar's style (e.g., 'talking' for 3D or 'css' for 2D).
+   * @type {[AvatarStyle, React.Dispatch<React.SetStateAction<AvatarStyle>>]}
+   */
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('talking');
+  /**
+   * State for the avatar's texture (e.g., 'nebula', 'glass', etc.).
+   * @type {[AvatarTexture, React.Dispatch<React.SetStateAction<AvatarTexture>>]}
+   */
   const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
+  /**
+   * State for the avatar's shape (e.g., 'sphere', 'cube').
+   * @type {[AvatarShape, React.Dispatch<React.SetStateAction<AvatarShape>>]}
+   */
   const [avatarShape, setAvatarShape] = useState<AvatarShape>('sphere');
+  /**
+   * State for the avatar's primary color.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [avatarColor, setAvatarColor] = useState<string>('#0099ff');
 
-
+  /**
+   * Effect hook to apply the current theme to the document body.
+   * This runs whenever the `theme` state changes.
+   */
   useEffect(() => {
     document.body.className = '';
     document.body.classList.add(theme);
@@ -40,26 +86,39 @@ const App: React.FC = () => {
     isModelThinking,
     modelExpression,
   } = useGeminiLive(voice, isCameraOn, isSearchEnabled);
-
+  /**
+   * Toggles the camera on or off.
+   * This is only allowed when the connection is idle, closed, or in an error state.
+   */
   const handleToggleCamera = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
       setIsCameraOn(prev => !prev);
     }
   };
-  
+  /**
+   * Toggles the web search functionality.
+   * This is only allowed when the connection is idle, closed, or in an error state.
+   */
   const handleToggleSearch = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
       setIsSearchEnabled(prev => !prev);
     }
   };
-
+  /**
+   * Handles starting a new conversation.
+   * If a connection is active, it disconnects. It also clears the transcript.
+   */
   const handleNewConversation = () => {
     if (connectionState === 'connected' || connectionState === 'connecting') {
       disconnect();
     }
     clearTranscript();
   };
-
+  /**
+   * Determines if the "New Conversation" button should be disabled.
+   * The button is disabled if the connection is idle and there is no transcript content.
+   * @type {boolean}
+   */
   const isNewConversationDisabled =
     (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') &&
     transcript.length === 0 &&
@@ -69,14 +128,21 @@ const App: React.FC = () => {
   // Determine the avatar's state for the placeholder screen
   const isUserSpeaking = interimTranscript.user.trim().length > 0;
   const isModelSpeaking = interimTranscript.model.trim().length > 0;
-  
+  /**
+   * The current state of the avatar for the placeholder screen.
+   * Can be 'idle', 'thinking', or 'listening'.
+   * @type {AvatarState}
+   */
   let placeholderAvatarState: AvatarState = 'idle';
   if (isModelThinking) {
     placeholderAvatarState = 'thinking';
   } else if (isUserSpeaking) {
     placeholderAvatarState = 'listening';
   }
-  
+  /**
+   * An object containing all the current avatar customization settings.
+   * This is passed down to the `ConversationView` component.
+   */
   const avatarSettings = {
     style: avatarStyle,
     texture: avatarTexture,
