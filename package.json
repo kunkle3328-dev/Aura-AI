@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.29.0",
-    "@react-three/drei": "^10.0.0-rc.3",
-    "@react-three/fiber": "^9.0.0-rc.10",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.181.0"
+    "@google/genai": "^1.29.0",
+    "three": "^0.166.1",
+    "@react-three/fiber": "^8.16.8",
+    "@react-three/drei": "^9.108.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

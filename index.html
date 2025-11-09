@@ -5,6 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aura AI</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#111827" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -566,6 +568,10 @@
       @keyframes glitch-anim-2 { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(3px); } }
       @keyframes binary-scroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
       @keyframes plasma-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      @keyframes energy-pulse {
+        0%, 100% { background-size: 100% 100%, 100% 100%; }
+        50% { background-size: 110% 110%, 95% 95%; }
+      }
 
       .aura-avatar-container {
         position: relative;
@@ -621,6 +627,7 @@
         border-radius: 50%;
         background-color: var(--color-focus-ring);
         background-size: 200% 200%;
+        background-position: center;
         transition: transform 0.3s ease-in-out, background-position 1s ease;
         animation: saccade-x 8s ease-in-out infinite, saccade-y 11s ease-in-out infinite;
       }
@@ -656,15 +663,33 @@
       [data-form="crystal"] .aura-sphere { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
       [data-form="circuit"] .aura-sphere { border-radius: 25%; }
       /* Texture */
-      [data-texture="nebula"] .aura-iris { background-image: radial-gradient(circle, #fff, var(--color-focus-ring) 40%, #000 80%); animation: waveAnimation 10s ease infinite alternate; }
-      [data-texture="matrix"] .aura-iris { background-image: linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), radial-gradient(circle at center, var(--color-focus-ring), #000); background-size: 20px 20px, 20px 20px, 100% 100%; background-position: 0 0, 10px 10px, 0 0; }
-      [data-texture="energy"] .aura-iris { background-image: radial-gradient(circle at center, #fff 5%, var(--color-focus-ring) 15%, transparent 60%), repeating-radial-gradient(circle at center, var(--color-focus-ring), var(--color-focus-ring) 5px, transparent 10px, transparent 10px); }
+      [data-texture="nebula"] .aura-iris { 
+        background-image: radial-gradient(circle at center, #fff, var(--color-focus-ring) 40%, #000 80%); 
+        background-size: 150% 150%;
+        animation: plasma-flow 15s ease-in-out infinite alternate;
+      }
+      [data-texture="matrix"] .aura-iris { 
+        background-image: 
+          linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), 
+          linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), 
+          radial-gradient(circle at center, var(--color-focus-ring), #000); 
+        background-size: 20px 20px, 20px 20px, 100% 100%; 
+        background-position: 0 0, 10px 10px, center;
+      }
+      [data-texture="energy"] .aura-iris { 
+        background-image: 
+          radial-gradient(circle at center, #fff 5%, var(--color-focus-ring) 15%, transparent 60%), 
+          repeating-radial-gradient(circle at center, var(--color-focus-ring), var(--color-focus-ring) 5px, transparent 10px, transparent 10px); 
+        background-position: center;
+        animation: energy-pulse 4s ease-in-out infinite;
+      }
       [data-texture="circuit"] .aura-iris { 
         background-color: #01050a;
         background-image: 
           repeating-linear-gradient(0deg, var(--color-focus-ring), var(--color-focus-ring) 1px, transparent 1px, transparent 10px),
           repeating-linear-gradient(90deg, var(--color-focus-ring), var(--color-focus-ring) 1px, transparent 1px, transparent 10px);
         background-size: 10px 10px;
+        background-position: center;
         box-shadow: inset 0 0 15px var(--color-focus-ring);
       }
       [data-texture="glitch"] .aura-iris { background-color: #000; overflow: hidden; }
@@ -672,8 +697,12 @@
       [data-texture="glitch"] .aura-iris::before { animation: glitch-anim-1 2s infinite linear alternate-reverse; transform: translateX(5px); }
       [data-texture="glitch"] .aura-iris::after { animation: glitch-anim-1 1.5s infinite linear alternate-reverse, glitch-anim-2 0.3s infinite linear; transform: translateX(-5px); }
       [data-texture="binary"] .aura-iris { background: #010103; color: var(--color-focus-ring); overflow: hidden; position: relative; font-family: monospace; font-size: 8px; line-height: 1.1; }
-      [data-texture="binary"] .aura-iris::before { content: '011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110011000010110001101100011011001010111001101110011001000000110011101110010011000010110111001110100011001010110010000101110001011100010111001110000011100100110111101100011011001010111001101110011011010010110111001100111001000000111000101110101011001010111001001111001010101101101001011011100111010001100101011100100110011001100001011000110110010100100000011100110111100101101110011000110110100001110010011011110110111001101001011110100110010101100100000011101000111001001100001011011100111001101100110011001010111001001110010011010010110111001100111001000000110010001100001011101000110000100101110001011100010111001100001011000110110001101100101011100110111001100100000011001110111001001100001011011100111010001100101011001000010111000101110001011100111000001110010011011110110001101100101011100110111001101101001011011100110011100100000011100010111010101100101011100100111100101010110110100101101110011101000110010101110010011001100110000101100011011001010010000001110011011110010110111001100011011010000111001001101111011011100110100101111010011001010110010000001110100011100100110000101101110011100110110011001100101011100100111001001101001011011100110011100100000011001000110000101110100011000010010111000101110001011100110000101100011011000110110010101110011011100110010000001100111011100100110000101101110011101000110010101100100001011100010111000101110011100000111001001101111011000110110010101110011011100110110100101101110011001110010000001110001011101010110010101110010011110010101011011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110'; position: absolute; top: 0; left: 0; width: 100%; height: 200%; word-break: break-all; animation: binary-scroll 8s linear infinite; text-align: center; }
-      [data-texture="plasma"] .aura-iris { background: radial-gradient(circle at 20% 20%, hsl(from var(--color-focus-ring) h s 70%), transparent 40%), radial-gradient(circle at 80% 70%, hsl(from var(--color-focus-ring) h s 50%), transparent 40%), radial-gradient(circle at 50% 50%, var(--color-focus-ring), #000 80%); background-size: 200% 200%; animation: plasma-flow 12s ease-in-out infinite alternate; }
+      [data-texture="binary"] .aura-iris::before { content: '011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110011000010110001101100011011001010111001101110011001000000110011101110010011000010110111001110100011001010110010000101110001011100010111001110000011100100110111101100011011001010111001101110011011010010110111001100111001000000111000101110101011001010111001001111001010101101101001011011100111010001100101011100100110011001100001011000110110010100100000011100110111100101101110011000110110100001110010011011110110111001101001011110100110010101100100000011101000111001001100001011011100111001101100110011001010111001001110010011010010110111001100111001000000110010001100001011101000110000100101110001011100010111001100001011000110110001101100101011100110111001100100000011001110111001001100001011011100111010001100101011001000010111000101110001011100111000001110010011011110110001101100101011100110111001101101001011011100110011100100000001110001011101010110010101110010011110010101011011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000011101000111001001100001011011100111001101100110011001010111001001110010011010010110111001100111001000000110010001100001011101000110000100101110001011100010111001100001011000110110001101100101011100110111001100100000011001110111001001100001011011100111010001100101011001000010111000101110001011100111000001110010011011110110001101100101011100110111001101101001011011100110011100100000011100010111010101100101011100100111100101010110110100101101110011101000110010101110010011001100110000101100011011001010010000001110011011110010110111001100011011010000111001001101111011011100110100101111010011001010110010000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110'; position: absolute; top: 0; left: 0; width: 100%; height: 200%; word-break: break-all; animation: binary-scroll 8s linear infinite; text-align: center; }
+      [data-texture="plasma"] .aura-iris { 
+        background-image: radial-gradient(circle at center, hsl(from var(--color-focus-ring) h s 80%) 0%, hsl(from var(--color-focus-ring) h s 60%) 25%, var(--color-focus-ring) 50%, #000 75%);
+        background-size: 200% 200%; 
+        animation: plasma-flow 12s ease-in-out infinite alternate; 
+      }
     </style>
   <script type="importmap">
 {
@@ -681,7 +710,11 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0"
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "three": "https://aistudiocdn.com/three@^0.166.1",
+    "three/": "https://aistudiocdn.com/three@^0.166.1/",
+    "@react-three/fiber": "https://aistudiocdn.com/@react-three/fiber@^8.16.8",
+    "@react-three/drei": "https://aistudiocdn.com/@react-three/drei@^9.108.3"
   }
 }
 </script>
@@ -689,5 +722,16 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration);
+          }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

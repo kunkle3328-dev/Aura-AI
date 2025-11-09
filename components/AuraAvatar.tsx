@@ -1,97 +1,117 @@
 import React, { useEffect, useRef } from 'react';
 import { ModelExpression, AvatarState, AvatarStyle, AvatarTexture } from '../types';
-/**
- * Interface for the props of the AuraAvatar component.
- */
+
 interface AuraAvatarProps {
-  /** The current state of the avatar (e.g., 'idle', 'speaking', 'listening'). */
   state: AvatarState;
-  /** The current expression of the model (e.g., 'neutral', 'celebratory'). */
   expression: ModelExpression;
-  /** The audio stream to use for lip-syncing when the avatar is speaking. */
   speakingStream?: MediaStream | null;
-  /** The overall style of the avatar. */
   form: AvatarStyle;
-  /** The texture to apply to the avatar. */
   texture: AvatarTexture;
 }
-/**
- * A 2D CSS-based animated avatar that represents the Aura AI.
- * It changes its appearance based on the application's state and can visualize
- * audio output through pupil dilation.
- *
- * @param {AuraAvatarProps} props The props for the component.
- * @returns {React.ReactElement} The rendered AuraAvatar component.
- */
+
 export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speakingStream, form, texture }) => {
-  /** Reference to the pupil DOM element for animation. */
+  const containerRef = useRef<HTMLDivElement>(null);
   const pupilRef = useRef<HTMLDivElement>(null);
-  /** Reference to the Web Audio API AudioContext. */
+  
   const audioContextRef = useRef<AudioContext | null>(null);
-  /** Reference to the Web Audio API AnalyserNode. */
   const analyserRef = useRef<AnalyserNode | null>(null);
-  /** Reference to the audio source node. */
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  /** Reference to the requestAnimationFrame ID for cleanup. */
+  
   const animationFrameId = useRef<number | null>(null);
+  const currentPupilScale = useRef(1);
+  const currentHeadBob = useRef(0);
+  const currentHeadTilt = useRef(0);
   
   useEffect(() => {
-    const pupilElement = pupilRef.current;
-    /**
-     * Cleans up all audio-related resources.
-     * Stops the animation frame loop, disconnects audio nodes, and closes the audio context.
-     */
-    const cleanupAudio = () => {
-      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-      sourceRef.current?.disconnect();
-      analyserRef.current?.disconnect();
-      if(audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(console.error);
-      }
-      audioContextRef.current = null;
-      sourceRef.current = null;
-      analyserRef.current = null;
-      if(pupilElement) {
-        pupilElement.style.setProperty('--pupil-scale', '1');
+    const setupAudio = () => {
+      if (speakingStream && speakingStream.getAudioTracks().length > 0) {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const context = new AudioContext();
+        audioContextRef.current = context;
+        
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.5;
+        analyserRef.current = analyser;
+        
+        const source = context.createMediaStreamSource(speakingStream);
+        source.connect(analyser);
+        sourceRef.current = source;
       }
     };
 
-    if (state === 'speaking' && speakingStream && speakingStream.getAudioTracks().length > 0) {
-      cleanupAudio(); // Clean up previous instances
+    const cleanupAudio = () => {
+      sourceRef.current?.disconnect();
+      analyserRef.current?.disconnect();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(console.error);
+      }
+      analyserRef.current = null;
+      sourceRef.current = null;
+      audioContextRef.current = null;
+    };
 
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 64;
-      analyserRef.current.smoothingTimeConstant = 0.5;
-      const bufferLength = analyserRef.current.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      sourceRef.current = audioContextRef.current.createMediaStreamSource(speakingStream);
-      sourceRef.current.connect(analyserRef.current);
-      /**
-       * The animation loop that updates the pupil scale based on audio frequency data.
-       */
-      const draw = () => {
-        animationFrameId.current = requestAnimationFrame(draw);
-        if (!analyserRef.current || !pupilElement) return;
-        
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        const scale = 1 + (average / 256) * 0.25; // Max scale of 1.25
-        
-        pupilElement.style.setProperty('--pupil-scale', scale.toFixed(2));
-      };
-      draw();
-    } else {
-        cleanupAudio();
+    if (state === 'speaking') {
+      setupAudio();
     }
     
     return cleanupAudio;
   }, [state, speakingStream]);
 
+  useEffect(() => {
+    const pupilElement = pupilRef.current;
+    const containerElement = containerRef.current;
+    
+    const animate = () => {
+      animationFrameId.current = requestAnimationFrame(animate);
+
+      let targetPupilScale = 1;
+      let targetHeadBob = 0;
+      let targetHeadTilt = 0;
+
+      if (state === 'speaking' && analyserRef.current) {
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+        const normalizedVolume = average / 128;
+
+        targetPupilScale = 1 + Math.min(normalizedVolume * 0.2, 0.2);
+        targetHeadBob = Math.min(normalizedVolume * 1.5, 2.0);
+        targetHeadTilt = Math.min(normalizedVolume * 1.0, 1.5);
+      }
+      
+      currentPupilScale.current += (targetPupilScale - currentPupilScale.current) * 0.2;
+      currentHeadBob.current += (targetHeadBob - currentHeadBob.current) * 0.2;
+      currentHeadTilt.current += (targetHeadTilt - currentHeadTilt.current) * 0.2;
+      
+      if (pupilElement) {
+        pupilElement.style.setProperty('--pupil-scale', currentPupilScale.current.toFixed(3));
+      }
+
+      if (containerElement) {
+        const isAnimating = Math.abs(currentHeadBob.current) > 0.01 || Math.abs(currentHeadTilt.current) > 0.01;
+        if (state === 'speaking' || isAnimating) {
+          containerElement.style.transform = `translateY(-${currentHeadBob.current.toFixed(2)}px) rotate(${currentHeadTilt.current.toFixed(2)}deg)`;
+        } else {
+          containerElement.style.transform = ''; // Let CSS animation take over
+        }
+      }
+    };
+
+    animate();
+
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      if (containerElement) containerElement.style.transform = '';
+    };
+  }, [state]);
+
   return (
     <div 
+      ref={containerRef}
       className="aura-avatar-container w-full h-full"
       data-state={state}
       data-expression={expression}

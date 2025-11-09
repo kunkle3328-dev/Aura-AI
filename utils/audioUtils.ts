@@ -1,11 +1,6 @@
 import { Blob } from '@google/genai';
 
-/**
- * Decodes a base64 string into a Uint8Array.
- *
- * @param {string} base64 The base64 string to decode.
- * @returns {Uint8Array} The decoded Uint8Array.
- */
+// Base64 decoding
 export function decode(base64: string): Uint8Array {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -16,15 +11,11 @@ export function decode(base64: string): Uint8Array {
   return bytes;
 }
 
-/**
- * Decodes raw audio data into an AudioBuffer.
- *
- * @param {Uint8Array} data The raw audio bytes from the API.
- * @param {AudioContext} ctx The destination AudioContext for playback.
- * @param {number} sourceSampleRate The sample rate of the incoming audio data.
- * @param {number} numChannels The number of audio channels.
- * @returns {Promise<AudioBuffer>} A promise that resolves with the decoded AudioBuffer.
- */
+// Custom audio buffer decoding.
+// data: The raw audio bytes from the API.
+// ctx: The destination AudioContext for playback.
+// sourceSampleRate: The sample rate of the incoming audio data (e.g., 24000).
+// numChannels: The number of audio channels.
 export async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -45,12 +36,8 @@ export async function decodeAudioData(
   return buffer;
 }
 
-/**
- * Encodes a Uint8Array into a base64 string.
- *
- * @param {Uint8Array} bytes The Uint8Array to encode.
- * @returns {string} The encoded base64 string.
- */
+
+// Base64 encoding
 export function encode(bytes: Uint8Array): string {
   let binary = '';
   const len = bytes.byteLength;
@@ -60,12 +47,7 @@ export function encode(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/**
- * Creates a Blob object for the Gemini API from raw audio data.
- *
- * @param {Float32Array} data The raw audio data.
- * @returns {Blob} The created Blob object.
- */
+// Create a Blob object for the Gemini API from raw audio data
 export function createBlob(data: Float32Array): Blob {
     const l = data.length;
     const int16 = new Int16Array(l);

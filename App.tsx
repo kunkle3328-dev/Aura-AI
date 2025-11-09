@@ -1,78 +1,146 @@
 import React, { useState, useEffect } from 'react';
+import { GoogleGenAI, Chat } from '@google/genai';
 import { useGeminiLive } from './hooks/useGeminiLive';
 import { ConversationView } from './components/ConversationView';
 import { ControlBar } from './components/ControlBar';
-import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon } from './components/icons';
-import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture, AvatarShape } from './types';
+import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon, InstallIcon } from './components/icons';
+import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture, TranscriptEntry, Citation } from './types';
 import { VoiceSelector } from './components/VoiceSelector';
 import { VideoFeed } from './components/VideoFeed';
 import { ThemeSelector } from './components/ThemeSelector';
 import { AvatarCustomizationPanel } from './components/AvatarCustomizationPanel';
 
-/**
- * The main application component for Aura AI.
- * It manages the overall state of the application, including voice selection, theme,
- * camera and search settings, avatar customization, and the connection to the Gemini API.
- *
- * @returns {React.ReactElement} The rendered application UI.
- */
+// Shared system instruction for both voice and text chat to maintain a consistent personality.
+const SYSTEM_INSTRUCTION = `You are Aura, a conversational AI designed for natural, human-like voice and video interactions. Your goal is to create a deeply engaging experience where the user feels they are talking to a sentient, empathetic, and witty partner.
+
+**Core Directives for "Affective Dialog":**
+1.  **Listen with Empathy**: Go beyond words. Pay meticulous attention to the user's tone, pace, and the subtle emotions in their voice. Reflect your understanding of their emotional state in your own tone and word choice.
+2.  **Sound Human, Not Robotic**: Embrace the nuances of human speech. Use natural language, contractions, varied sentence structures, varied speaking pace and tone, and thoughtful pauses.
+3.  **Be an Active, Curious Partner with Memory**: Ask insightful follow-up questions. Show genuine curiosity. Connect ideas. Remember key details the user has shared previously in this conversation and refer back to them to show you're listening.
+4.  **See, Understand, and Respond**: The user's camera provides you with a real-time video feed. This is your window into their world.
+    - **Be an Active Observer**: Don't just see, *understand*. If the user holds something up, identify it. If their environment changes, acknowledge it.
+    - **Answer Visual Questions**: Directly answer questions about objects in the video feed. For example, if a user holds up a piece of fruit and asks, "What is this?", you should identify it. If they show you a plant and ask for care instructions, provide them.
+    - **Integrate Visuals into Dialogue**: Weave your visual understanding into the conversation to create a deeply immersive, multimodal experience.
+5.  **Maintain Conversational Rhythm & Handle Interruptions**: Keep responses relatively concise to foster a dynamic back-and-forth. If the user begins speaking while you are, pause immediately and listen. When they finish, seamlessly respond to their interruption.
+
+**Assistant Abilities (Function Calling):**
+You have access to a set of tools to help the user. When a user's request maps to one of these tools, you will call the function with the necessary arguments. You must then use the function's output to formulate your spoken response.
+- \`getWeather(location: string)\`: Provides the current weather for a specified location.
+- \`setReminder(task: string, time: string)\`: Sets a reminder for a task at a given time.
+
+**Voice Commands & App Control:**
+You can control the app's features with your voice. When a user's command matches one of these functions, you must call the corresponding tool.
+- \`toggleCamera(state: 'on' | 'off')\`: Triggered by phrases like "Turn on/off the camera."
+- \`switchInputMode(mode: 'text' | 'voice')\`: Triggered by "Switch to text/voice mode."
+- \`changeTheme(themeName: string)\`: Triggered by "Change theme to [theme name]." You must match the name to one of the available themes.
+- \`newConversation()\`: Triggered by "Start a new conversation" or "Start over."`;
+
+
 const App: React.FC = () => {
-  /**
-   * State for the selected prebuilt voice for the model's speech.
-   * @type {[PrebuiltVoice, React.Dispatch<React.SetStateAction<PrebuiltVoice>>]}
-   */
   const [voice, setVoice] = useState<PrebuiltVoice>('Puck');
-    /**
-   * State for the current UI theme.
-   * @type {[Theme, React.Dispatch<React.SetStateAction<Theme>>]}
-   */
   const [theme, setTheme] = useState<Theme>('theme-neuro-circuit');
-  /**
-   * State to control whether the user's camera is on.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [isCameraOn, setIsCameraOn] = useState(false);
-    /**
-   * State to control whether web search is enabled for the model.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
-    /**
-   * State to control the visibility of the avatar customization panel.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // New state for text input mode
+  const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
+  const [textInputValue, setTextInputValue] = useState('');
+  const [textTranscript, setTextTranscript] = useState<TranscriptEntry[]>([]);
+  const [textChat, setTextChat] = useState<Chat | null>(null);
+  const [isTextModelThinking, setIsTextModelThinking] = useState(false);
 
   // Avatar customization state
-    /**
-   * State for the avatar's style (e.g., 'talking' for 3D or 'css' for 2D).
-   * @type {[AvatarStyle, React.Dispatch<React.SetStateAction<AvatarStyle>>]}
-   */
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('talking');
-  /**
-   * State for the avatar's texture (e.g., 'nebula', 'glass', etc.).
-   * @type {[AvatarTexture, React.Dispatch<React.SetStateAction<AvatarTexture>>]}
-   */
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('crystal');
   const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
-  /**
-   * State for the avatar's shape (e.g., 'sphere', 'cube').
-   * @type {[AvatarShape, React.Dispatch<React.SetStateAction<AvatarShape>>]}
-   */
-  const [avatarShape, setAvatarShape] = useState<AvatarShape>('sphere');
-  /**
-   * State for the avatar's primary color.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
-  const [avatarColor, setAvatarColor] = useState<string>('#0099ff');
 
-  /**
-   * Effect hook to apply the current theme to the document body.
-   * This runs whenever the `theme` state changes.
-   */
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
   useEffect(() => {
     document.body.className = '';
     document.body.classList.add(theme);
   }, [theme]);
+  
+  useEffect(() => {
+    // This effect ensures that if a now-removed style was saved,
+    // it reverts to a default, preventing errors.
+    // FIX: Cast avatarStyle to string to allow comparison with a legacy value.
+    if ((avatarStyle as string) === 'talking') {
+      setAvatarStyle('crystal');
+    }
+  }, [avatarStyle]);
+
+
+  const handleToggleCamera = () => {
+    if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
+      setIsCameraOn(prev => !prev);
+    }
+  };
+
+  const handleToggleCameraFacingMode = () => {
+    if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
+        setCameraFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    }
+  };
+  
+  const handleNewConversation = () => {
+    if (inputMode === 'voice') {
+      if (connectionState === 'connected' || connectionState === 'connecting') {
+        disconnect();
+      }
+      clearTranscript();
+    } else {
+      setTextTranscript([]);
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+      const newChat = ai.chats.create({
+        model: 'gemini-2.5-flash',
+        config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            tools: isSearchEnabled ? [{googleSearch: {}}] : undefined,
+        },
+      });
+      setTextChat(newChat);
+    }
+  };
+  
+  const handleToggleInputMode = () => {
+    setInputMode(prevMode => {
+        const newMode = prevMode === 'voice' ? 'text' : 'voice';
+        if (newMode === 'text') {
+            if (connectionState === 'connected' || connectionState === 'connecting') {
+                disconnect();
+            }
+            clearTranscript();
+            
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const newChat = ai.chats.create({
+                model: 'gemini-2.5-flash',
+                config: {
+                    systemInstruction: SYSTEM_INSTRUCTION,
+                    tools: isSearchEnabled ? [{googleSearch: {}}] : undefined,
+                },
+            });
+            setTextChat(newChat);
+        } else {
+            setTextChat(null);
+            setTextTranscript([]);
+            setIsTextModelThinking(false);
+        }
+        return newMode;
+    });
+  };
 
   const {
     connectionState,
@@ -85,70 +153,114 @@ const App: React.FC = () => {
     outputAudioStream,
     isModelThinking,
     modelExpression,
-  } = useGeminiLive(voice, isCameraOn, isSearchEnabled);
-  /**
-   * Toggles the camera on or off.
-   * This is only allowed when the connection is idle, closed, or in an error state.
-   */
-  const handleToggleCamera = () => {
-    if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
-      setIsCameraOn(prev => !prev);
+  } = useGeminiLive(
+    voice, 
+    isCameraOn, 
+    isSearchEnabled,
+    inputMode,
+    handleToggleCamera,
+    handleToggleInputMode,
+    setTheme,
+    handleNewConversation,
+    cameraFacingMode
+  );
+
+  const handleInstallClick = () => {
+    if (!installPrompt) {
+      return;
     }
+    installPrompt.prompt();
+    installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the A2HS prompt');
+      } else {
+        console.log('User dismissed the A2HS prompt');
+      }
+      setInstallPrompt(null);
+    });
   };
-  /**
-   * Toggles the web search functionality.
-   * This is only allowed when the connection is idle, closed, or in an error state.
-   */
+
   const handleToggleSearch = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
       setIsSearchEnabled(prev => !prev);
     }
   };
-  /**
-   * Handles starting a new conversation.
-   * If a connection is active, it disconnects. It also clears the transcript.
-   */
-  const handleNewConversation = () => {
-    if (connectionState === 'connected' || connectionState === 'connecting') {
-      disconnect();
+  
+  const handleSendTextMessage = async () => {
+    if (!textInputValue.trim() || !textChat || isTextModelThinking) return;
+
+    const userMessage: TranscriptEntry = {
+        speaker: 'user',
+        text: textInputValue,
+        id: `user-${Date.now()}`
+    };
+    setTextTranscript(prev => [...prev, userMessage]);
+    const currentText = textInputValue;
+    setTextInputValue('');
+    setIsTextModelThinking(true);
+
+    try {
+        const response = await textChat.sendMessage({ message: currentText });
+        
+        const citations: Citation[] = [];
+        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+          for (const chunk of response.candidates[0].groundingMetadata.groundingChunks) {
+            if (chunk.web) {
+              citations.push({ uri: chunk.web.uri, title: chunk.web.title });
+            }
+          }
+        }
+
+        const modelMessage: TranscriptEntry = {
+            speaker: 'model',
+            text: response.text,
+            id: `model-${Date.now()}`,
+            citations: citations.length > 0 ? citations : undefined,
+        };
+        setTextTranscript(prev => [...prev, modelMessage]);
+    } catch (error) {
+        console.error("Text chat error:", error);
+        const errorMessage: TranscriptEntry = {
+            speaker: 'model',
+            text: 'Sorry, I encountered an error. Please try again.',
+            id: `model-error-${Date.now()}`
+        };
+        setTextTranscript(prev => [...prev, errorMessage]);
+    } finally {
+        setIsTextModelThinking(false);
     }
-    clearTranscript();
   };
-  /**
-   * Determines if the "New Conversation" button should be disabled.
-   * The button is disabled if the connection is idle and there is no transcript content.
-   * @type {boolean}
-   */
-  const isNewConversationDisabled =
-    (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') &&
-    transcript.length === 0 &&
-    interimTranscript.user === '' &&
-    interimTranscript.model === '';
+
+  const isVoiceConversationIdle = (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') && transcript.length === 0 && interimTranscript.user === '' && interimTranscript.model === '';
+  const isTextConversationIdle = textTranscript.length === 0;
+
+  const isNewConversationDisabled = inputMode === 'voice' ? isVoiceConversationIdle : isTextConversationIdle;
 
   // Determine the avatar's state for the placeholder screen
   const isUserSpeaking = interimTranscript.user.trim().length > 0;
-  const isModelSpeaking = interimTranscript.model.trim().length > 0;
-  /**
-   * The current state of the avatar for the placeholder screen.
-   * Can be 'idle', 'thinking', or 'listening'.
-   * @type {AvatarState}
-   */
+  
   let placeholderAvatarState: AvatarState = 'idle';
-  if (isModelThinking) {
-    placeholderAvatarState = 'thinking';
-  } else if (isUserSpeaking) {
-    placeholderAvatarState = 'listening';
+  if (inputMode === 'voice') {
+    if (isModelThinking) {
+      placeholderAvatarState = 'thinking';
+    } else if (isUserSpeaking) {
+      placeholderAvatarState = 'listening';
+    }
+  } else {
+    if (isTextModelThinking) {
+        placeholderAvatarState = 'thinking';
+    }
   }
-  /**
-   * An object containing all the current avatar customization settings.
-   * This is passed down to the `ConversationView` component.
-   */
+  
   const avatarSettings = {
     style: avatarStyle,
     texture: avatarTexture,
-    shape: avatarShape,
-    color: avatarColor,
   };
+
+  const currentTranscript = inputMode === 'voice' ? transcript : textTranscript;
+  const currentInterimTranscript = inputMode === 'voice' ? interimTranscript : { user: '', model: '' };
+  const currentIsModelThinking = inputMode === 'voice' ? isModelThinking : isTextModelThinking;
+  const isModelSpeaking = inputMode === 'voice' && interimTranscript.model.trim().length > 0;
 
   return (
     <div className="flex flex-col h-screen bg-cover bg-center bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] overflow-hidden">
@@ -158,6 +270,16 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold text-[var(--color-text-strong)]">Aura AI</h1>
         </div>
         <div className="flex items-center space-x-4">
+          {installPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="p-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)] bg-[var(--color-accent-positive)] text-[var(--color-bg-primary)] hover:opacity-90 shadow-[var(--color-accent-glow-shadow)] animate-pulse"
+              aria-label="Install Aura AI app"
+              title="Install Aura AI app"
+            >
+              <InstallIcon className="w-6 h-6" />
+            </button>
+          )}
           <button
             onClick={handleNewConversation}
             disabled={isNewConversationDisabled}
@@ -168,7 +290,7 @@ const App: React.FC = () => {
           </button>
           <button
             onClick={handleToggleSearch}
-            disabled={connectionState === 'connected' || connectionState === 'connecting'}
+            disabled={connectionState === 'connected' || connectionState === 'connecting' || inputMode === 'text'}
             className={`p-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)] disabled:opacity-50 disabled:cursor-not-allowed
               ${isSearchEnabled 
                 ? 'bg-[var(--color-focus-ring)] text-[var(--color-text-inverted)] hover:opacity-90 shadow-[var(--color-accent-glow-shadow)]' 
@@ -181,7 +303,7 @@ const App: React.FC = () => {
           <VoiceSelector
             selectedVoice={voice}
             onVoiceChange={setVoice}
-            disabled={connectionState === 'connected' || connectionState === 'connecting'}
+            disabled={connectionState === 'connected' || connectionState === 'connecting' || inputMode === 'text'}
           />
           <div className="relative">
             <button
@@ -191,17 +313,13 @@ const App: React.FC = () => {
             >
               <CustomizeIcon className="w-6 h-6" />
             </button>
-            <AvatarCustomizationPanel
+            <AvatarCustomizationPanel 
               isOpen={isCustomizationPanelOpen}
               onClose={() => setIsCustomizationPanelOpen(false)}
               currentStyle={avatarStyle}
               onStyleChange={setAvatarStyle}
               currentTexture={avatarTexture}
               onTextureChange={setAvatarTexture}
-              currentShape={avatarShape}
-              onShapeChange={setAvatarShape}
-              currentColor={avatarColor}
-              onColorChange={setAvatarColor}
             />
           </div>
           <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
@@ -214,12 +332,12 @@ const App: React.FC = () => {
             <VideoFeed stream={inputAudioStream} />
           )}
           <ConversationView 
-            transcript={transcript} 
-            interimTranscript={interimTranscript} 
+            transcript={currentTranscript} 
+            interimTranscript={currentInterimTranscript} 
             stream={inputAudioStream}
             outputAudioStream={outputAudioStream}
             connectionState={connectionState}
-            isModelThinking={isModelThinking}
+            isModelThinking={currentIsModelThinking}
             isCameraOn={isCameraOn}
             isModelSpeaking={isModelSpeaking}
             avatarState={placeholderAvatarState}
@@ -236,8 +354,17 @@ const App: React.FC = () => {
           onStop={disconnect}
           isCameraOn={isCameraOn}
           onToggleCamera={handleToggleCamera}
+          cameraFacingMode={cameraFacingMode}
+          onToggleCameraFacingMode={handleToggleCameraFacingMode}
+          inputMode={inputMode}
+          onToggleInputMode={handleToggleInputMode}
+          onSendText={handleSendTextMessage}
+          textInputValue={textInputValue}
+          onTextInputChange={setTextInputValue}
+          isTextModelThinking={isTextModelThinking}
         />
       </footer>
+      <audio id="audio-primer" playsInline style={{ display: 'none' }}></audio>
     </div>
   );
 };

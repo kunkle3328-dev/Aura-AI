@@ -1,19 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-/**
- * Interface for the props of the Visualizer component.
- */
+
 interface VisualizerProps {
-  /** The MediaStream to visualize. */
   stream: MediaStream;
-  /** Whether the conversation is currently active. */
   isConversationActive: boolean;
 }
-/**
- * A component that visualizes audio from a MediaStream.
- *
- * @param {VisualizerProps} props The props for the component.
- * @returns {React.ReactElement} The rendered visualizer.
- */
+
 export const Visualizer: React.FC<VisualizerProps> = ({ stream, isConversationActive }) => {
   const visualizerRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -21,9 +12,6 @@ export const Visualizer: React.FC<VisualizerProps> = ({ stream, isConversationAc
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameId = useRef<number | null>(null);
   
-  /**
-   * Effect hook to set up the audio visualizer.
-   */
   useEffect(() => {
     if (!stream) return;
 
@@ -37,9 +25,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ stream, isConversationAc
     
     sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
     sourceRef.current.connect(analyserRef.current);
-    /**
-     * The animation loop that draws the visualizer.
-     */
+    
     const draw = () => {
       animationFrameId.current = requestAnimationFrame(draw);
       

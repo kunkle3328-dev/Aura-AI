@@ -1,0 +1,23 @@
+{
+  "name": "Aura AI",
+  "short_name": "Aura",
+  "description": "An application for natural, human-like voice conversations with an advanced AI, featuring real-time transcription and multimodal interaction.",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#111827",
+  "background_color": "#111827"
+}

@@ -1,4 +1,4 @@
 import React from 'react';
 
 // This component has been removed to ensure application stability.
-export const TalkingAvatar: React.FC = () => null;
+export const StaticTalkingAvatar: React.FC = () => null;

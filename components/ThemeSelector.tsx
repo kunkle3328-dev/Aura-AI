@@ -1,27 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Theme, THEMES } from '../types';
 import { PaletteIcon, CheckIcon } from './icons';
-/**
- * Interface for the props of the ThemeSelector component.
- */
+
 interface ThemeSelectorProps {
-  /** The currently selected theme. */
   currentTheme: Theme;
-  /** Callback function to be called when a new theme is selected. */
   onThemeChange: (theme: Theme) => void;
 }
-/**
- * A component that allows the user to select a theme for the application.
- *
- * @param {ThemeSelectorProps} props The props for the component.
- * @returns {React.ReactElement} The rendered theme selector.
- */
+
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentTheme, onThemeChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  /**
-   * Effect hook to handle clicks outside the theme selector to close it.
-   */
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -31,11 +20,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentTheme, onTh
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [wrapperRef]);
-  /**
-   * Handles the selection of a new theme.
-   *
-   * @param {Theme} themeId The ID of the selected theme.
-   */
+
   const handleThemeSelect = (themeId: Theme) => {
     onThemeChange(themeId);
     setIsOpen(false);
