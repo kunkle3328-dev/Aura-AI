@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ConnectionState } from '../types';
 import { MicIcon, StopIcon, CameraIcon, CameraOffIcon, KeyboardIcon, SendIcon, SwitchCameraIcon } from './icons';
@@ -16,7 +15,7 @@ interface ControlBarProps {
   onSendText: () => void;
   textInputValue: string;
   onTextInputChange: (value: string) => void;
-  isTextModelThinking: boolean;
+  isModelThinking: boolean;
 }
 
 export const ControlBar: React.FC<ControlBarProps> = ({
@@ -32,7 +31,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   onSendText,
   textInputValue,
   onTextInputChange,
-  isTextModelThinking,
+  isModelThinking,
 }) => {
   const isConnecting = connectionState === 'connecting';
   const isConnected = connectionState === 'connected';
@@ -44,6 +43,9 @@ export const ControlBar: React.FC<ControlBarProps> = ({
       case 'connecting':
         return 'Connecting...';
       case 'connected':
+        if (isModelThinking) {
+          return 'Aura is thinking...';
+        }
         return 'Listening...';
       case 'closed':
         return 'Conversation ended';
@@ -57,7 +59,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        if (textInputValue.trim() && !isTextModelThinking) {
+        if (textInputValue.trim() && !isModelThinking) {
             onSendText();
         }
     }
@@ -102,7 +104,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
 
             {/* Center Mic Button */}
             <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
-              {isConnected && (
+              {isConnected && !isModelThinking && (
                 <div className="absolute w-full h-full rounded-full bg-[var(--color-button-danger-bg)] animate-ping opacity-75"></div>
               )}
               <button
@@ -152,16 +154,16 @@ export const ControlBar: React.FC<ControlBarProps> = ({
                 onChange={(e) => onTextInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
-                disabled={isTextModelThinking}
+                disabled={isModelThinking}
                 className="w-full h-16 p-4 pr-20 rounded-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:outline-none transition-colors disabled:opacity-50"
               />
               <button
                 onClick={onSendText}
-                disabled={!textInputValue.trim() || isTextModelThinking}
+                disabled={!textInputValue.trim() || isModelThinking}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center bg-[var(--color-button-primary-bg)] hover:bg-[var(--color-button-primary-hover-bg)] disabled:bg-[var(--color-bg-tertiary)] disabled:cursor-not-allowed transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-tertiary)] focus:ring-[var(--color-focus-ring)]"
                 aria-label="Send message"
               >
-                {isTextModelThinking ? (
+                {isModelThinking ? (
                      <div className="w-6 h-6 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
                 ) : (
                     <SendIcon className="w-6 h-6" />
@@ -170,7 +172,7 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             </div>
           </div>
           <p className="text-[var(--color-text-secondary)] text-sm h-5">
-              {isTextModelThinking ? 'Aura is thinking...' : 'Press Enter to send'}
+              {isModelThinking ? 'Aura is thinking...' : 'Press Enter to send'}
           </p>
         </>
       )}

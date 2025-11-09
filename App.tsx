@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 import { useGeminiLive } from './hooks/useGeminiLive';
@@ -9,9 +10,11 @@ import { VoiceSelector } from './components/VoiceSelector';
 import { VideoFeed } from './components/VideoFeed';
 import { ThemeSelector } from './components/ThemeSelector';
 import { AvatarCustomizationPanel } from './components/AvatarCustomizationPanel';
+import { DevConsoleCore } from './utils/devConsole';
+import DevPanel from './components/DevPanel';
 
 // Shared system instruction for both voice and text chat to maintain a consistent personality.
-const SYSTEM_INSTRUCTION = `You are Aura, a conversational AI designed for natural, human-like voice and video interactions. Your goal is to create a deeply engaging experience where the user feels they are talking to a sentient, empathetic, and witty partner.
+const BASE_SYSTEM_INSTRUCTION = `You are Aura, a conversational AI designed for natural, human-like voice and video interactions. Your goal is to create a deeply engaging experience where the user feels they are talking to a sentient, empathetic, and witty partner.
 
 **Core Directives for "Affective Dialog":**
 1.  **Listen with Empathy**: Go beyond words. Pay meticulous attention to the user's tone, pace, and the subtle emotions in their voice. Reflect your understanding of their emotional state in your own tone and word choice.
@@ -35,6 +38,11 @@ You can control the app's features with your voice. When a user's command matche
 - \`changeTheme(themeName: string)\`: Triggered by "Change theme to [theme name]." You must match the name to one of the available themes.
 - \`newConversation()\`: Triggered by "Start a new conversation" or "Start over."`;
 
+const getSystemInstruction = (config: any) => {
+    const personaInstruction = `Your current persona is '${config.persona}'. You must embody this persona.`;
+    const toneInstruction = `You must adopt a '${config.tone}' tone for all your responses.`;
+    return [personaInstruction, toneInstruction, BASE_SYSTEM_INSTRUCTION].join('\n\n');
+};
 
 const App: React.FC = () => {
   const [voice, setVoice] = useState<PrebuiltVoice>('Puck');
@@ -45,8 +53,10 @@ const App: React.FC = () => {
   const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
 
-  // New state for text input mode
-  const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
+  // Dev Console State
+  const [devConfig, setDevConfig] = useState(DevConsoleCore.getConfig());
+  const inputMode = devConfig.voiceEnabled ? 'voice' : 'text';
+
   const [textInputValue, setTextInputValue] = useState('');
   const [textTranscript, setTextTranscript] = useState<TranscriptEntry[]>([]);
   const [textChat, setTextChat] = useState<Chat | null>(null);
@@ -55,6 +65,11 @@ const App: React.FC = () => {
   // Avatar customization state
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('crystal');
   const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
+
+  useEffect(() => {
+    const unsubscribe = DevConsoleCore.subscribe(setDevConfig);
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -74,9 +89,6 @@ const App: React.FC = () => {
   }, [theme]);
   
   useEffect(() => {
-    // This effect ensures that if a now-removed style was saved,
-    // it reverts to a default, preventing errors.
-    // FIX: Cast avatarStyle to string to allow comparison with a legacy value.
     if ((avatarStyle as string) === 'talking') {
       setAvatarStyle('crystal');
     }
@@ -105,9 +117,9 @@ const App: React.FC = () => {
       setTextTranscript([]);
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       const newChat = ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: devConfig.model,
         config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
+            systemInstruction: getSystemInstruction(devConfig),
             tools: isSearchEnabled ? [{googleSearch: {}}] : undefined,
         },
       });
@@ -116,31 +128,32 @@ const App: React.FC = () => {
   };
   
   const handleToggleInputMode = () => {
-    setInputMode(prevMode => {
-        const newMode = prevMode === 'voice' ? 'text' : 'voice';
-        if (newMode === 'text') {
-            if (connectionState === 'connected' || connectionState === 'connecting') {
-                disconnect();
-            }
-            clearTranscript();
-            
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const newChat = ai.chats.create({
-                model: 'gemini-2.5-flash',
-                config: {
-                    systemInstruction: SYSTEM_INSTRUCTION,
-                    tools: isSearchEnabled ? [{googleSearch: {}}] : undefined,
-                },
-            });
-            setTextChat(newChat);
-        } else {
-            setTextChat(null);
-            setTextTranscript([]);
-            setIsTextModelThinking(false);
-        }
-        return newMode;
-    });
+    DevConsoleCore.handleCommand('/toggle_voice');
   };
+
+  useEffect(() => {
+      if (inputMode === 'text') {
+          if (connectionState === 'connected' || connectionState === 'connecting') {
+              disconnect();
+          }
+          clearTranscript();
+          
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+          const newChat = ai.chats.create({
+              model: devConfig.model,
+              config: {
+                  systemInstruction: getSystemInstruction(devConfig),
+                  tools: isSearchEnabled ? [{googleSearch: {}}] : undefined,
+              },
+          });
+          setTextChat(newChat);
+      } else {
+          setTextChat(null);
+          setTextTranscript([]);
+          setIsTextModelThinking(false);
+      }
+  }, [inputMode, devConfig.model, devConfig.tone, devConfig.persona, isSearchEnabled]);
+
 
   const {
     connectionState,
@@ -162,7 +175,8 @@ const App: React.FC = () => {
     handleToggleInputMode,
     setTheme,
     handleNewConversation,
-    cameraFacingMode
+    cameraFacingMode,
+    getSystemInstruction(devConfig),
   );
 
   const handleInstallClick = () => {
@@ -188,15 +202,28 @@ const App: React.FC = () => {
   
   const handleSendTextMessage = async () => {
     if (!textInputValue.trim() || !textChat || isTextModelThinking) return;
+    const currentText = textInputValue;
+    setTextInputValue('');
+
+    const wasCommand = DevConsoleCore.handleCommand(currentText, (response) => {
+        const commandResponseMessage: TranscriptEntry = {
+            speaker: 'model',
+            text: response,
+            id: `system-response-${Date.now()}`
+        };
+        setTextTranscript(prev => [...prev, commandResponseMessage]);
+    });
+
+    if (wasCommand) {
+        return;
+    }
 
     const userMessage: TranscriptEntry = {
         speaker: 'user',
-        text: textInputValue,
+        text: currentText,
         id: `user-${Date.now()}`
     };
     setTextTranscript(prev => [...prev, userMessage]);
-    const currentText = textInputValue;
-    setTextInputValue('');
     setIsTextModelThinking(true);
 
     try {
@@ -236,7 +263,6 @@ const App: React.FC = () => {
 
   const isNewConversationDisabled = inputMode === 'voice' ? isVoiceConversationIdle : isTextConversationIdle;
 
-  // Determine the avatar's state for the placeholder screen
   const isUserSpeaking = interimTranscript.user.trim().length > 0;
   
   let placeholderAvatarState: AvatarState = 'idle';
@@ -273,11 +299,12 @@ const App: React.FC = () => {
           {installPrompt && (
             <button
               onClick={handleInstallClick}
-              className="p-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)] bg-[var(--color-accent-positive)] text-[var(--color-bg-primary)] hover:opacity-90 shadow-[var(--color-accent-glow-shadow)] animate-pulse"
+              className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)] bg-[var(--color-accent-positive)] text-[var(--color-bg-primary)] hover:opacity-90 shadow-[var(--color-accent-glow-shadow)] animate-pulse"
               aria-label="Install Aura AI app"
               title="Install Aura AI app"
             >
-              <InstallIcon className="w-6 h-6" />
+              <InstallIcon className="w-5 h-5" />
+              <span className="text-sm font-semibold">Install App</span>
             </button>
           )}
           <button
@@ -361,10 +388,11 @@ const App: React.FC = () => {
           onSendText={handleSendTextMessage}
           textInputValue={textInputValue}
           onTextInputChange={setTextInputValue}
-          isTextModelThinking={isTextModelThinking}
+          isModelThinking={currentIsModelThinking}
         />
       </footer>
       <audio id="audio-primer" playsInline style={{ display: 'none' }}></audio>
+      <DevPanel />
     </div>
   );
 };

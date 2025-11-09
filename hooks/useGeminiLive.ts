@@ -1,5 +1,8 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, ConnectConfig, FunctionDeclaration, Type } from '@google/genai';
+// FIX: LiveSession is not an exported member of '@google/genai' and has been removed. Using `any` as a placeholder for the session promise.
+// FIX: The type for ai.live.connect parameters is `LiveConnectParameters`, not `LiveConnectConfig`.
+import { GoogleGenAI, LiveServerMessage, Modality, LiveConnectParameters, FunctionDeclaration, Type } from '@google/genai';
 import { ConnectionState, TranscriptEntry, InterimTranscript, PrebuiltVoice, ModelExpression, Citation, THEMES, Theme } from '../types';
 import { createBlob, decode, decodeAudioData } from '../utils/audioUtils';
 
@@ -10,7 +13,7 @@ const BUFFER_SIZE = 2048; // Reduced for lower latency
 const VIDEO_FRAME_RATE = 10;
 const JPEG_QUALITY = 0.7;
 const SILENCE_THRESHOLD = 0.01; // RMS threshold for detecting silence
-const SILENCE_DURATION_MS = 400; // Reduced for faster perceived response
+const SILENCE_DURATION_MS = 750; // A more natural pause duration before AI takes its turn
 
 const POSITIVE_KEYWORDS = ['great', 'wonderful', 'awesome', 'fantastic', 'excellent', 'love that', 'amazing', 'perfect'];
 const EMPATHETIC_KEYWORDS = ['sad', 'tough', 'hard', 'sorry to hear', 'understand', 'difficult'];
@@ -124,7 +127,8 @@ export const useGeminiLive = (
     onSwitchInputMode: () => void,
     onChangeTheme: (theme: Theme) => void,
     onNewConversation: () => void,
-    cameraFacingMode: 'user' | 'environment'
+    cameraFacingMode: 'user' | 'environment',
+    systemInstruction: string,
 ) => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -134,7 +138,8 @@ export const useGeminiLive = (
   const [isModelThinking, setIsModelThinking] = useState(false);
   const [modelExpression, setModelExpression] = useState<ModelExpression>('neutral');
 
-  const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+  // FIX: The `LiveSession` type is not exported from `@google/genai`. Using `any` for the session promise type.
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const outputStreamDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
@@ -273,7 +278,12 @@ export const useGeminiLive = (
         // 2. Create the output AudioContext and "unlock" it by playing a silent buffer.
         // This must be done inside the user gesture (this click handler) and before getUserMedia.
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const outputContext = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+        const outputContext = new AudioContext({ 
+            sampleRate: OUTPUT_SAMPLE_RATE,
+            // FIX: Set latencyHint to 'playback' to encourage routing through the media
+            // volume control rather than the in-call/earpiece volume control on mobile devices.
+            latencyHint: 'playback'
+        });
         outputAudioContextRef.current = outputContext;
 
         if (outputContext.state === 'suspended') {
@@ -309,39 +319,19 @@ export const useGeminiLive = (
 
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
-        const liveConfig: ConnectConfig = {
+        // FIX: The type for the argument to ai.live.connect is LiveConnectParameters.
+        // This object contains `model`, `config`, and `callbacks` properties.
+        const liveConfig: LiveConnectParameters = {
             model: 'gemini-2.5-flash-native-audio-preview-09-2025',
             config: {
-            responseModalities: [Modality.AUDIO],
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
-            },
-            thinkingConfig: { thinkingBudget: 0 },
-            systemInstruction: `You are Aura, a conversational AI designed for natural, human-like voice and video interactions. Your goal is to create a deeply engaging experience where the user feels they are talking to a sentient, empathetic, and witty partner.
-
-**Core Directives for "Affective Dialog":**
-1.  **Listen with Empathy**: Go beyond words. Pay meticulous attention to the user's tone, pace, and the subtle emotions in their voice. Reflect your understanding of their emotional state in your own tone and word choice.
-2.  **Sound Human, Not Robotic**: Embrace the nuances of human speech. Use natural language, contractions, varied sentence structures, varied speaking pace and tone, and thoughtful pauses.
-3.  **Be an Active, Curious Partner with Memory**: Ask insightful follow-up questions. Show genuine curiosity. Connect ideas. Remember key details the user has shared previously in this conversation and refer back to them to show you're listening.
-4.  **See, Understand, and Respond**: The user's camera provides you with a real-time video feed. This is your window into their world.
-    - **Be an Active Observer**: Don't just see, *understand*. If the user holds something up, identify it. If their environment changes, acknowledge it.
-    - **Answer Visual Questions**: Directly answer questions about objects in the video feed.
-    - **Integrate Visuals into Dialogue**: Weave your visual understanding into the conversation to create a deeply immersive, multimodal experience.
-5.  **Maintain Conversational Rhythm & Handle Interruptions**: Keep responses relatively concise to foster a dynamic back-and-forth. If the user begins speaking while you are, pause immediately and listen. When they finish, seamlessly respond to their interruption.
-
-**Assistant Abilities (Function Calling):**
-You have access to a set of tools to help the user. When a user's request maps to one of these tools, you will call the function with the necessary arguments.
-- \`getWeather(location: string)\`: Provides the current weather for a specified location.
-- \`setReminder(task: string, time: string)\`: Sets a reminder for a task at a given time.
-
-**Voice Commands & App Control:**
-You can control the app's features with your voice. When a user's command matches one of these functions, you must call the corresponding tool.
-- \`toggleCamera(state: 'on' | 'off')\`: Triggered by phrases like "Turn on/off the camera."
-- \`switchInputMode(mode: 'text' | 'voice')\`: Triggered by "Switch to text/voice mode."
-- \`changeTheme(themeName: string)\`: Triggered by "Change theme to [theme name]." You must match the name to one of the available themes.
-- \`newConversation()\`: Triggered by "Start a new conversation" or "Start over."`,
+                responseModalities: [Modality.AUDIO],
+                inputAudioTranscription: {},
+                outputAudioTranscription: {},
+                speechConfig: {
+                    voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
+                },
+                thinkingConfig: { thinkingBudget: 0 },
+                systemInstruction: systemInstruction,
             },
             callbacks: {
             onopen: () => {
@@ -538,7 +528,9 @@ You can control the app's features with your voice. When a user's command matche
         if (isSearchEnabled) {
             tools.push({ googleSearch: {} });
         }
-        liveConfig.config.tools = tools;
+        if (liveConfig.config) {
+          liveConfig.config.tools = tools;
+        }
 
 
         sessionPromiseRef.current = ai.live.connect(liveConfig);
@@ -547,7 +539,7 @@ You can control the app's features with your voice. When a user's command matche
         setConnectionState('error');
         cleanup();
     }
-  }, [connectionState, cleanup, voice, isModelThinking, isCameraOn, isSearchEnabled, currentInputMode, onToggleCamera, onSwitchInputMode, onChangeTheme, onNewConversation, speakConfirmation, cameraFacingMode]);
+  }, [connectionState, cleanup, voice, isModelThinking, isCameraOn, isSearchEnabled, currentInputMode, onToggleCamera, onSwitchInputMode, onChangeTheme, onNewConversation, speakConfirmation, cameraFacingMode, systemInstruction]);
   
   const disconnect = useCallback(async () => {
     if (sessionPromiseRef.current) {
