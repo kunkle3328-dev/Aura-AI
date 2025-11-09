@@ -4,7 +4,7 @@ import { GoogleGenAI, Chat } from '@google/genai';
 import { useGeminiLive } from './hooks/useGeminiLive';
 import { ConversationView } from './components/ConversationView';
 import { ControlBar } from './components/ControlBar';
-import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon, InstallIcon } from './components/icons';
+import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon } from './components/icons';
 import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture, TranscriptEntry, Citation } from './types';
 import { VoiceSelector } from './components/VoiceSelector';
 import { VideoFeed } from './components/VideoFeed';
@@ -51,7 +51,6 @@ const App: React.FC = () => {
   const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
   const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Dev Console State
   const [devConfig, setDevConfig] = useState(DevConsoleCore.getConfig());
@@ -69,18 +68,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = DevConsoleCore.subscribe(setDevConfig);
     return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-    };
   }, []);
 
   useEffect(() => {
@@ -178,21 +165,6 @@ const App: React.FC = () => {
     cameraFacingMode,
     getSystemInstruction(devConfig),
   );
-
-  const handleInstallClick = () => {
-    if (!installPrompt) {
-      return;
-    }
-    installPrompt.prompt();
-    installPrompt.userChoice.then((choiceResult: { outcome: 'accepted' | 'dismissed' }) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the A2HS prompt');
-      } else {
-        console.log('User dismissed the A2HS prompt');
-      }
-      setInstallPrompt(null);
-    });
-  };
 
   const handleToggleSearch = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
@@ -296,17 +268,6 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold text-[var(--color-text-strong)]">Aura AI</h1>
         </div>
         <div className="flex items-center space-x-4">
-          {installPrompt && (
-            <button
-              onClick={handleInstallClick}
-              className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)] bg-[var(--color-accent-positive)] text-[var(--color-bg-primary)] hover:opacity-90 shadow-[var(--color-accent-glow-shadow)] animate-pulse"
-              aria-label="Install Aura AI app"
-              title="Install Aura AI app"
-            >
-              <InstallIcon className="w-5 h-5" />
-              <span className="text-sm font-semibold">Install App</span>
-            </button>
-          )}
           <button
             onClick={handleNewConversation}
             disabled={isNewConversationDisabled}
