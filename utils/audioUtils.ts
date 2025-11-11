@@ -1,4 +1,9 @@
-import { Blob } from '@google/genai';
+// The Gemini API expects an object with this structure for media blobs.
+// The previous import of `Blob` from '@google/genai' is no longer valid.
+export interface GeminiBlob {
+  data: string;
+  mimeType: string;
+}
 
 // Base64 decoding
 export function decode(base64: string): Uint8Array {
@@ -11,29 +16,53 @@ export function decode(base64: string): Uint8Array {
   return bytes;
 }
 
-// Custom audio buffer decoding.
-// data: The raw audio bytes from the API.
-// ctx: The destination AudioContext for playback.
-// sourceSampleRate: The sample rate of the incoming audio data (e.g., 24000).
-// numChannels: The number of audio channels.
-export async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sourceSampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  // Create a buffer in the destination AudioContext, using its sample rate.
-  const buffer = ctx.createBuffer(numChannels, frameCount, sourceSampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
+function writeString(view: DataView, offset: number, string: string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
   }
-  return buffer;
+}
+
+/**
+ * Converts raw PCM audio data into a WAV file format.
+ * The HTML <audio> element cannot play raw PCM, so it needs a container like WAV.
+ * @param pcmData The raw audio data (as Uint8Array).
+ * @param sampleRate The sample rate of the audio.
+ * @param numChannels The number of audio channels.
+ * @param bitsPerSample The number of bits per sample (e.g., 16).
+ * @returns A Blob representing the WAV file.
+ */
+export function pcmToWav(pcmData: Uint8Array, sampleRate: number, numChannels: number, bitsPerSample: number): Blob {
+  const format = 1; // PCM
+  const subChunk1Size = 16;
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const byteRate = sampleRate * blockAlign;
+  const subChunk2Size = pcmData.byteLength;
+  const chunkSize = 36 + subChunk2Size;
+
+  const buffer = new ArrayBuffer(44 + pcmData.byteLength);
+  const view = new DataView(buffer);
+
+  // RIFF chunk descriptor
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, chunkSize, true);
+  writeString(view, 8, 'WAVE');
+  // "fmt " sub-chunk
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, subChunk1Size, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  // "data" sub-chunk
+  writeString(view, 36, 'data');
+  view.setUint32(40, subChunk2Size, true);
+
+  // Write PCM data
+  new Uint8Array(buffer, 44).set(pcmData);
+
+  return new Blob([view], { type: 'audio/wav' });
 }
 
 
@@ -47,8 +76,8 @@ export function encode(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-// Create a Blob object for the Gemini API from raw audio data
-export function createBlob(data: Float32Array): Blob {
+// Create a GeminiBlob object for the Gemini API from raw audio data
+export function createBlob(data: Float32Array): GeminiBlob {
     const l = data.length;
     const int16 = new Int16Array(l);
     for (let i = 0; i < l; i++) {
