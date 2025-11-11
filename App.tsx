@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 import { useGeminiLive } from './hooks/useGeminiLive';
@@ -81,6 +80,13 @@ const App: React.FC = () => {
     }
   }, [avatarStyle]);
 
+  // Clear transcripts when memory is disabled
+  useEffect(() => {
+    if (!devConfig.memoryEnabled) {
+      clearTranscript();
+      setTextTranscript([]);
+    }
+  }, [devConfig.memoryEnabled]);
 
   const handleToggleCamera = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
@@ -141,7 +147,6 @@ const App: React.FC = () => {
       }
   }, [inputMode, devConfig.model, devConfig.tone, devConfig.persona, isSearchEnabled]);
 
-
   const {
     connectionState,
     transcript,
@@ -185,6 +190,34 @@ const App: React.FC = () => {
         };
         setTextTranscript(prev => [...prev, commandResponseMessage]);
     });
+    
+    // If the command is summarize_context, perform summarization and stop further processing
+    if (currentText.startsWith('/summarize_context')) {
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const transcriptString = textTranscript.map(entry => `${entry.speaker}: ${entry.text}`).join('\n');
+            const summaryResponse = await ai.models.generateContent({
+                model: devConfig.model,
+                contents: [{ parts: [{ text: `Provide a concise summary of the following conversation:\n${transcriptString}` }] }],
+            });
+            const summaryText = summaryResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Summary unavailable.';
+            const summaryMessage: TranscriptEntry = {
+                speaker: 'model',
+                text: summaryText,
+                id: `model-summary-${Date.now()}`,
+            };
+            setTextTranscript(prev => [...prev, summaryMessage]);
+        } catch (error) {
+            console.error('Summary failed', error);
+            const errorMessage: TranscriptEntry = {
+                speaker: 'model',
+                text: 'Sorry, I encountered an error while summarizing.',
+                id: `model-summary-error-${Date.now()}`,
+            };
+            setTextTranscript(prev => [...prev, errorMessage]);
+        }
+        return;
+    }
 
     if (wasCommand) {
         return;
