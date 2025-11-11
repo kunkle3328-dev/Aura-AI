@@ -16,6 +16,7 @@
     "expo-file-system": "~17.0.1",
     "expo-gl": "~14.0.1",
     "expo-status-bar": "~2.0.0",
+    "@expo/metro-runtime": "~3.2.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.75.2",
