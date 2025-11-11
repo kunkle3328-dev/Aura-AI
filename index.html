@@ -378,11 +378,15 @@
         --color-text-glow-shadow: 0 0 5px rgba(217, 207, 255, 0.3);
       }
 
-      /* PREMIUM ANIMATED THEMES */
+      /* --- PREMIUM ANIMATED THEMES --- */
       @keyframes waveAnimation {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
+      }
+      @keyframes move-stars {
+        from { background-position: 0 0; }
+        to { background-position: -10000px 5000px; }
       }
 
       body.theme-aetherium-wave {
@@ -390,6 +394,8 @@
         background: linear-gradient(-45deg, #020412, #0d0624, #08252e, #231338);
         background-size: 400% 400%;
         animation: waveAnimation 25s ease infinite;
+        position: relative;
+        overflow: hidden;
         --color-bg-secondary: rgba(49, 46, 129, 0.2);
         --color-bg-tertiary: rgba(5, 150, 105, 0.3);
         --color-text-primary: #c7d2fe;
@@ -422,6 +428,25 @@
         --color-accent-glow-shadow: 0 0 18px 0px var(--color-accent);
         --color-text-glow-shadow: 0 0 6px rgba(199, 210, 254, 0.4);
       }
+      body.theme-aetherium-wave::after {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 200%; height: 200%;
+        background-image:
+          radial-gradient(1px 1px at 20px 30px, #eee, transparent),
+          radial-gradient(1px 1px at 40px 70px, #fff, transparent),
+          radial-gradient(1px 1px at 50px 160px, #ddd, transparent),
+          radial-gradient(1.5px 1.5px at 90px 40px, #fff, transparent),
+          radial-gradient(1px 1px at 130px 80px, #fff, transparent),
+          radial-gradient(1px 1px at 160px 120px, #ddd, transparent);
+        background-repeat: repeat;
+        background-size: 200px 200px;
+        opacity: 0.6;
+        animation: move-stars 200s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+      }
 
       /* --- OVERHAULED NEURO-CIRCUIT THEME --- */
       @keyframes scanline {
@@ -429,11 +454,16 @@
         100% { transform: translateY(110%); }
       }
        @keyframes border-glow-pulse {
-        0%, 100% { box-shadow: 0 0 18px 0px var(--glow-color, transparent); }
-        50% { box-shadow: 0 0 28px 4px var(--glow-color, transparent); }
+        0%, 100% { box-shadow: 0 0 18px 0px var(--glow-color, transparent), inset 0 0 4px var(--glow-color, transparent); }
+        50% { box-shadow: 0 0 28px 4px var(--glow-color, transparent), inset 0 0 8px var(--glow-color, transparent); }
       }
       body.theme-neuro-circuit {
         --color-bg-primary: #010108;
+        background-color: var(--color-bg-primary);
+        background-image:
+          linear-gradient(rgba(0, 110, 255, 0.07) 1px, transparent 1px),
+          linear-gradient(to right, rgba(0, 110, 255, 0.07) 1px, transparent 1px);
+        background-size: 2rem 2rem;
         overflow: hidden;
         position: relative;
       }
@@ -538,170 +568,72 @@
 
       /* --- NEW AURA AVATAR --- */
       @keyframes idle-hover {
-        0%, 100% { transform: translateY(0) rotateX(0deg) scale(1); }
-        50% { transform: translateY(-4px) rotateX(5deg) scale(1.01); }
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-4px) scale(1.01); }
       }
-      @keyframes idle-pupil-dilate {
-        0%, 100% { transform: translate(-50%, -50%) scale(1); }
-        50% { transform: translate(-50%, -50%) scale(0.9); }
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 5px 20px -5px rgba(0,0,0,0.6), inset 0 0 15px var(--color-focus-ring), 0 0 10px var(--color-focus-ring); }
+        50% { box-shadow: 0 8px 30px -5px rgba(0,0,0,0.4), inset 0 0 25px var(--color-focus-ring), 0 0 25px var(--color-focus-ring); }
       }
-      @keyframes thinking-scan {
-        0% { transform: translate(-50%, -50%) translateY(-8%) rotate(0deg); }
-        25% { transform: translate(-50%, -50%) translateY(8%) rotate(5deg); }
-        75% { transform: translate(-50%, -50%) translateY(-8%) rotate(-5deg); }
-        100% { transform: translate(-50%, -50%) translateY(-8%) rotate(0deg); }
+      @keyframes thinking-glow-spin {
+        0% { transform: rotate(0deg); opacity: 0.7; }
+        100% { transform: rotate(360deg); opacity: 0.7; }
       }
-      @keyframes saccade-x { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-3%); } 60% { transform: translateX(2%); } }
-      @keyframes saccade-y { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(4%); } 80% { transform: translateY(-2%); } }
-
-      @keyframes celebratory-sparkle-anim {
-        0% { r: 0; opacity: 1; }
-        100% { r: 5; opacity: 0; }
-      }
-      .aura-avatar-container[data-expression="celebratory"] .sparkle {
-        animation: celebratory-sparkle-anim 0.8s ease-out infinite;
-      }
-      .aura-avatar-container[data-expression="celebratory"] .sparkle:nth-child(2) { animation-delay: 0.2s; }
-      .aura-avatar-container[data-expression="celebratory"] .sparkle:nth-child(3) { animation-delay: 0.4s; }
-
-      @keyframes glitch-anim-1 { 0%, 100% { clip-path: inset(45% 0 50% 0); } 25% { clip-path: inset(0 0 0 0); } 50% { clip-path: inset(80% 0 10% 0); } 75% { clip-path: inset(30% 0 60% 0); } }
-      @keyframes glitch-anim-2 { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(3px); } }
-      @keyframes binary-scroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
-      @keyframes plasma-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      @keyframes energy-pulse {
-        0%, 100% { background-size: 100% 100%, 100% 100%; }
-        50% { background-size: 110% 110%, 95% 95%; }
+      @keyframes empathetic-ripple {
+        0% { transform: scale(1); opacity: 0; }
+        50% { opacity: 0.5; }
+        100% { transform: scale(1.3); opacity: 0; }
       }
 
       .aura-avatar-container {
         position: relative;
         width: 100%;
         height: 100%;
-        perspective: 600px;
-        transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-        will-change: transform;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: var(--color-bg-tertiary);
+        box-shadow: 0 5px 20px -5px rgba(0,0,0,0.6), inset 0 0 15px var(--color-focus-ring);
+        transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        will-change: transform, box-shadow;
       }
-      .aura-avatar-container[data-state="idle"] { animation: idle-hover 5s ease-in-out infinite; }
-      
-      .aura-sphere {
-        position: relative;
+      .aura-avatar-container::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
         width: 100%; height: 100%;
         border-radius: 50%;
-        background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%),
-                      radial-gradient(circle at 50% 50%, var(--color-focus-ring), var(--color-bg-tertiary) 70%);
-        transform-style: preserve-3d;
-        transition: all 0.4s ease;
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5), inset 0 -5px 15px rgba(0,0,0,0.3), inset 0 0 20px var(--color-focus-ring);
-        overflow: hidden;
+        z-index: 0;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        background: transparent;
+        pointer-events: none;
       }
-      .aura-sclera {
+      .aura-avatar-container[data-state="thinking"]::before {
+        background: conic-gradient(from 0deg, var(--color-focus-ring), transparent 60%, var(--color-focus-ring));
+        animation: thinking-glow-spin 4s linear infinite;
+      }
+      .aura-avatar-container[data-expression="empathetic"]::before {
+        background: radial-gradient(circle, var(--color-accent-empathetic) 0%, transparent 70%);
+        animation: empathetic-ripple 2.5s ease-out infinite;
+      }
+      .aura-avatar-container[data-state="idle"] {
+        animation: idle-hover 5s ease-in-out infinite;
+      }
+      .aura-avatar-container[data-state="listening"] {
+        transform: scale(1.03);
+        box-shadow: 0 8px 25px -5px rgba(0,0,0,0.5), inset 0 0 20px var(--color-focus-ring), 0 0 15px var(--color-focus-ring);
+      }
+      .aura-avatar-container[data-state="thinking"] {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+      .avatar-image {
         position: absolute;
-        top: 50%; left: 50%;
-        width: 70%; height: 70%;
-        transform: translate(-50%, -50%);
-        border-radius: 50%;
-        background: radial-gradient(ellipse at center, #111 40%, #000 100%);
-        overflow: hidden;
-      }
-      .aura-eyelid {
-        position: absolute;
-        left: -10%; right: -10%;
-        height: 50%;
-        background-color: var(--color-bg-tertiary);
-        transition: transform 0.4s cubic-bezier(0.6, 0, 0.4, 1);
-        z-index: 10;
-        background: radial-gradient(circle at 50% 50%, var(--color-focus-ring), var(--color-bg-tertiary) 120%);
-      }
-      .aura-eyelid-top { top: 0; transform: translateY(-100%); border-radius: 0 0 50% 50% / 0 0 100% 100%; }
-      .aura-eyelid-bottom { bottom: 0; transform: translateY(100%); border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
-      .aura-iris-container {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        transition: transform 0.5s ease-out;
-      }
-      .aura-iris {
-        position: absolute;
-        top: 50%; left: 50%;
-        width: 90%; height: 90%;
-        transform: translate(-50%, -50%);
-        border-radius: 50%;
-        background-color: var(--color-focus-ring);
-        background-size: 200% 200%;
-        background-position: center;
-        transition: transform 0.3s ease-in-out, background-position 1s ease;
-        animation: saccade-x 8s ease-in-out infinite, saccade-y 11s ease-in-out infinite;
-      }
-      .aura-pupil {
-        position: absolute;
-        top: 50%; left: 50%;
-        width: 40%; height: 40%;
-        transform: translate(-50%, -50%);
-        border-radius: 50%;
-        background: #000;
-        transition: transform 0.2s ease-out;
-      }
-      .aura-avatar-container[data-state="idle"] .aura-pupil { animation: idle-pupil-dilate 4s ease-in-out infinite; }
-
-      /* -- State Animations -- */
-      .aura-avatar-container[data-state="listening"] .aura-iris-container { transform: translate(5%, 8%) scale(0.98); }
-      .aura-avatar-container[data-state="thinking"] .aura-iris-container { animation: thinking-scan 4s ease-in-out infinite; }
-      .aura-avatar-container[data-state="speaking"] .aura-pupil { transform: translate(-50%, -50%) scale(var(--pupil-scale, 1)); }
-
-      /* -- Expression Animations -- */
-      .aura-avatar-container[data-expression="positive"] .aura-eyelid-top { transform: translateY(-110%) scaleY(0.8) !important; }
-      .aura-avatar-container[data-expression="positive"] .aura-eyelid-bottom { transform: translateY(105%) scaleY(0.9) !important; }
-      .aura-avatar-container[data-expression="empathetic"] .aura-eyelid-top { transform: translateY(-90%); }
-      .aura-avatar-container[data-expression="inquisitive"] { transform: rotate(8deg); }
-      .aura-avatar-container[data-expression="inquisitive"] .aura-pupil { transform: translate(-50%, -50%) scale(0.85); }
-      .aura-avatar-container[data-expression="celebratory"] .aura-sphere {
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5), inset 0 -5px 15px rgba(0,0,0,0.3), inset 0 0 30px var(--color-accent-celebratory);
-      }
-      .aura-avatar-container[data-expression="celebratory"] .aura-iris { background-color: var(--color-accent-celebratory); }
-
-      /* -- Customization Styles -- */
-      /* Form */
-      [data-form="crystal"] .aura-sphere { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
-      [data-form="circuit"] .aura-sphere { border-radius: 25%; }
-      /* Texture */
-      [data-texture="nebula"] .aura-iris { 
-        background-image: radial-gradient(circle at center, #fff, var(--color-focus-ring) 40%, #000 80%); 
-        background-size: 150% 150%;
-        animation: plasma-flow 15s ease-in-out infinite alternate;
-      }
-      [data-texture="matrix"] .aura-iris { 
-        background-image: 
-          linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), 
-          linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%), 
-          radial-gradient(circle at center, var(--color-focus-ring), #000); 
-        background-size: 20px 20px, 20px 20px, 100% 100%; 
-        background-position: 0 0, 10px 10px, center;
-      }
-      [data-texture="energy"] .aura-iris { 
-        background-image: 
-          radial-gradient(circle at center, #fff 5%, var(--color-focus-ring) 15%, transparent 60%), 
-          repeating-radial-gradient(circle at center, var(--color-focus-ring), var(--color-focus-ring) 5px, transparent 10px, transparent 10px); 
-        background-position: center;
-        animation: energy-pulse 4s ease-in-out infinite;
-      }
-      [data-texture="circuit"] .aura-iris { 
-        background-color: #01050a;
-        background-image: 
-          repeating-linear-gradient(0deg, var(--color-focus-ring), var(--color-focus-ring) 1px, transparent 1px, transparent 10px),
-          repeating-linear-gradient(90deg, var(--color-focus-ring), var(--color-focus-ring) 1px, transparent 1px, transparent 10px);
-        background-size: 10px 10px;
-        background-position: center;
-        box-shadow: inset 0 0 15px var(--color-focus-ring);
-      }
-      [data-texture="glitch"] .aura-iris { background-color: #000; overflow: hidden; }
-      [data-texture="glitch"] .aura-iris::before, [data-texture="glitch"] .aura-iris::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(0deg, var(--color-focus-ring) 0px, var(--color-focus-ring) 2px, transparent 2px, transparent 4px), repeating-linear-gradient(90deg, var(--color-focus-ring) 0px, var(--color-focus-ring) 2px, #000 2px, #000 4px); opacity: 0.8; }
-      [data-texture="glitch"] .aura-iris::before { animation: glitch-anim-1 2s infinite linear alternate-reverse; transform: translateX(5px); }
-      [data-texture="glitch"] .aura-iris::after { animation: glitch-anim-1 1.5s infinite linear alternate-reverse, glitch-anim-2 0.3s infinite linear; transform: translateX(-5px); }
-      [data-texture="binary"] .aura-iris { background: #010103; color: var(--color-focus-ring); overflow: hidden; position: relative; font-family: monospace; font-size: 8px; line-height: 1.1; }
-      [data-texture="binary"] .aura-iris::before { content: '0110100101101110011101000110010101110010011001100110000101100011011001010010000001110011011110010110111001100011011010000111001001101111011011100110100101111010011001010110010000001110100011100100110000101101110011100110110011001100101011100100111001001101001011011100110011100100000011001000110000101110100011000010010111000101110001011100110000101100011011000110110010101110011011100110010000001100111011100100110000101101110011101000110010101100100001011100010111000101110011100000111001001101111011000110110010101110011011100110110100101101110011001110010000001110001011101010110010101110010011110010101011011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110011000010110001101100011011001010111001101110011001000000110011101110010011000010110111001110100011001010110010000101110001011100010111001110000011100100110111101100011011001010111001101110011011010010110111001100111001000000011100010111010101100101011100100111100101010110110100101101110011101000110010101110010011001100110000101100011011001010010000001110011011110010110111001100011011010000111001001101111011011100110100101111010011001010110010000001110100011100100110000101101110011100110110011001100101011100100111001001101001011011100110011100100000011001000110000101110100011000010010111000101110001011100110000101100011011000110110010101110011011100110010000001100111011100100110000101101110011101000110010101100100001011100010111000101110011100000111001001101111011000110110010101110011011100110110100101101110011001110010000001110001011101010110010101110010011110010101011011010010110111001110100011001010111001001100110011000010110001101100101001000000111001101111001011011100110001101101000011100100110111101101110011010010111101001100101011001000000111010001110010011000010110111001110011011001100110010101110010011100100110100101101110011001110010000001100100011000010111010001100001001011100010111000101110'; position: absolute; top: 0; left: 0; width: 100%; height: 200%; word-break: break-all; animation: binary-scroll 8s linear infinite; text-align: center; }
-      [data-texture="plasma"] .aura-iris { 
-        background-image: radial-gradient(circle at center, hsl(from var(--color-focus-ring) h s 80%) 0%, hsl(from var(--color-focus-ring) h s 60%) 25%, var(--color-focus-ring) 50%, #000 75%);
-        background-size: 200% 200%; 
-        animation: plasma-flow 12s ease-in-out infinite alternate; 
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: opacity 0.1s ease-in-out;
+        z-index: 1;
       }
     </style>
   <script type="importmap">

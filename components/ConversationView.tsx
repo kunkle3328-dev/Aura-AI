@@ -1,14 +1,9 @@
 
 import React, { useEffect, useRef } from 'react';
-import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation, AvatarState, AvatarStyle, AvatarTexture } from '../types';
+import { TranscriptEntry, InterimTranscript, Speaker, ConnectionState, ModelExpression, Citation, AvatarState } from '../types';
 import { UserIcon, LinkIcon } from './icons';
 import { Visualizer } from './Visualizer';
 import { AuraAvatar } from './AuraAvatar';
-
-interface AvatarSettings {
-  style: AvatarStyle;
-  texture: AvatarTexture;
-}
 
 interface ConversationViewProps {
   transcript: TranscriptEntry[];
@@ -21,10 +16,9 @@ interface ConversationViewProps {
   isModelSpeaking: boolean;
   avatarState: AvatarState;
   avatarExpression: ModelExpression;
-  avatarSettings: AvatarSettings;
 }
 
-const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: boolean; isSpeaking?: boolean; outputAudioStream?: MediaStream | null; expression?: ModelExpression; citations?: Citation[]; avatarSettings: AvatarSettings; }> = ({ speaker, text, isInterim = false, isSpeaking = false, outputAudioStream, expression = 'neutral', citations, avatarSettings }) => {
+const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: boolean; isSpeaking?: boolean; outputAudioStream?: MediaStream | null; expression?: ModelExpression; citations?: Citation[]; }> = ({ speaker, text, isInterim = false, isSpeaking = false, outputAudioStream, expression = 'neutral', citations }) => {
   const isUser = speaker === 'user';
   
   if (!text) return null;
@@ -44,8 +38,6 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
             state={avatarState}
             speakingStream={outputAudioStream}
             expression={expression}
-            form={avatarSettings.style}
-            texture={avatarSettings.texture}
           />
         </div>
       )}
@@ -88,15 +80,13 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
   );
 };
 
-const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avatarSettings }) => {
+const ThinkingIndicator: React.FC = () => {
   return (
     <div className="flex items-start gap-4 my-4 justify-start">
       <div className="flex-shrink-0 w-10 h-10">
         <AuraAvatar
             state="thinking"
             expression="neutral"
-            form={avatarSettings.style}
-            texture={avatarSettings.texture}
         />
       </div>
       <div className="max-w-xl p-4 rounded-2xl bg-[var(--color-bubble-model-bg)] rounded-bl-none backdrop-blur-[var(--container-backdrop-blur)] border border-[var(--color-border)] glass-container">
@@ -110,7 +100,7 @@ const ThinkingIndicator: React.FC<{ avatarSettings: AvatarSettings }> = ({ avata
   );
 };
 
-export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, outputAudioStream, connectionState, isModelThinking, isCameraOn, isModelSpeaking, avatarState, avatarExpression, avatarSettings }) => {
+export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, outputAudioStream, connectionState, isModelThinking, isCameraOn, isModelSpeaking, avatarState, avatarExpression }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollEnabled = useRef(true);
 
@@ -145,8 +135,6 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
             <AuraAvatar
               state={avatarState}
               expression={avatarExpression}
-              form={avatarSettings.style}
-              texture={avatarSettings.texture}
             />
           </div>
           <h2 className="text-2xl font-semibold text-[var(--color-text-strong)]">Start a conversation with Aura</h2>
@@ -165,12 +153,11 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
             text={entry.text} 
             citations={entry.citations} 
             expression="neutral"
-            avatarSettings={avatarSettings}
         />
       ))}
-      {interimTranscript.user && <MessageBubble speaker="user" text={interimTranscript.user} isInterim avatarSettings={avatarSettings} />}
+      {interimTranscript.user && <MessageBubble speaker="user" text={interimTranscript.user} isInterim />}
       
-      {isModelThinking && <ThinkingIndicator avatarSettings={avatarSettings} />}
+      {isModelThinking && <ThinkingIndicator />}
 
       {interimTranscript.model && (
           <MessageBubble 
@@ -180,7 +167,6 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
             isSpeaking={isModelSpeaking} 
             outputAudioStream={outputAudioStream} 
             expression={avatarExpression}
-            avatarSettings={avatarSettings}
         />
       )}
     </div>

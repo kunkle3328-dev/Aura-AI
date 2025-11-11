@@ -1,14 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI, Chat } from '@google/genai';
 import { useGeminiLive } from './hooks/useGeminiLive';
 import { ConversationView } from './components/ConversationView';
 import { ControlBar } from './components/ControlBar';
-import { AuraIcon, NewConversationIcon, SearchIcon, CustomizeIcon } from './components/icons';
-import { PrebuiltVoice, Theme, AvatarState, AvatarStyle, AvatarTexture, TranscriptEntry, Citation } from './types';
+import { AuraIcon, NewConversationIcon, SearchIcon } from './components/icons';
+import { PrebuiltVoice, Theme, AvatarState, TranscriptEntry, Citation } from './types';
 import { VoiceSelector } from './components/VoiceSelector';
 import { VideoFeed } from './components/VideoFeed';
 import { ThemeSelector } from './components/ThemeSelector';
-import { AvatarCustomizationPanel } from './components/AvatarCustomizationPanel';
 import { DevConsoleCore } from './utils/devConsole';
 import DevPanel from './components/DevPanel';
 
@@ -45,11 +45,10 @@ const getSystemInstruction = (config: any) => {
 
 const App: React.FC = () => {
   const [voice, setVoice] = useState<PrebuiltVoice>('Puck');
-  const [theme, setTheme] = useState<Theme>('theme-neuro-circuit');
+  const [theme, setTheme] = useState<Theme>('theme-aetherium-wave');
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
   const [isSearchEnabled, setIsSearchEnabled] = useState(false);
-  const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState(false);
 
   // Dev Console State
   const [devConfig, setDevConfig] = useState(DevConsoleCore.getConfig());
@@ -60,10 +59,6 @@ const App: React.FC = () => {
   const [textChat, setTextChat] = useState<Chat | null>(null);
   const [isTextModelThinking, setIsTextModelThinking] = useState(false);
 
-  // Avatar customization state
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>('crystal');
-  const [avatarTexture, setAvatarTexture] = useState<AvatarTexture>('nebula');
-
   useEffect(() => {
     const unsubscribe = DevConsoleCore.subscribe(setDevConfig);
     return unsubscribe;
@@ -73,20 +68,6 @@ const App: React.FC = () => {
     document.body.className = '';
     document.body.classList.add(theme);
   }, [theme]);
-  
-  useEffect(() => {
-    if ((avatarStyle as string) === 'talking') {
-      setAvatarStyle('crystal');
-    }
-  }, [avatarStyle]);
-
-  // Clear transcripts when memory is disabled
-  useEffect(() => {
-    if (!devConfig.memoryEnabled) {
-      clearTranscript();
-      setTextTranscript([]);
-    }
-  }, [devConfig.memoryEnabled]);
 
   const handleToggleCamera = () => {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
@@ -147,6 +128,7 @@ const App: React.FC = () => {
       }
   }, [inputMode, devConfig.model, devConfig.tone, devConfig.persona, isSearchEnabled]);
 
+
   const {
     connectionState,
     transcript,
@@ -190,34 +172,6 @@ const App: React.FC = () => {
         };
         setTextTranscript(prev => [...prev, commandResponseMessage]);
     });
-    
-    // If the command is summarize_context, perform summarization and stop further processing
-    if (currentText.startsWith('/summarize_context')) {
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const transcriptString = textTranscript.map(entry => `${entry.speaker}: ${entry.text}`).join('\n');
-            const summaryResponse = await ai.models.generateContent({
-                model: devConfig.model,
-                contents: [{ parts: [{ text: `Provide a concise summary of the following conversation:\n${transcriptString}` }] }],
-            });
-            const summaryText = summaryResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Summary unavailable.';
-            const summaryMessage: TranscriptEntry = {
-                speaker: 'model',
-                text: summaryText,
-                id: `model-summary-${Date.now()}`,
-            };
-            setTextTranscript(prev => [...prev, summaryMessage]);
-        } catch (error) {
-            console.error('Summary failed', error);
-            const errorMessage: TranscriptEntry = {
-                speaker: 'model',
-                text: 'Sorry, I encountered an error while summarizing.',
-                id: `model-summary-error-${Date.now()}`,
-            };
-            setTextTranscript(prev => [...prev, errorMessage]);
-        }
-        return;
-    }
 
     if (wasCommand) {
         return;
@@ -283,11 +237,6 @@ const App: React.FC = () => {
     }
   }
   
-  const avatarSettings = {
-    style: avatarStyle,
-    texture: avatarTexture,
-  };
-
   const currentTranscript = inputMode === 'voice' ? transcript : textTranscript;
   const currentInterimTranscript = inputMode === 'voice' ? interimTranscript : { user: '', model: '' };
   const currentIsModelThinking = inputMode === 'voice' ? isModelThinking : isTextModelThinking;
@@ -326,23 +275,6 @@ const App: React.FC = () => {
             onVoiceChange={setVoice}
             disabled={connectionState === 'connected' || connectionState === 'connecting' || inputMode === 'text'}
           />
-          <div className="relative">
-            <button
-              onClick={() => setIsCustomizationPanelOpen(prev => !prev)}
-              className="p-2 rounded-full bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--color-bg-primary)] focus:ring-[var(--color-focus-ring)]"
-              aria-label="Customize avatar"
-            >
-              <CustomizeIcon className="w-6 h-6" />
-            </button>
-            <AvatarCustomizationPanel 
-              isOpen={isCustomizationPanelOpen}
-              onClose={() => setIsCustomizationPanelOpen(false)}
-              currentStyle={avatarStyle}
-              onStyleChange={setAvatarStyle}
-              currentTexture={avatarTexture}
-              onTextureChange={setAvatarTexture}
-            />
-          </div>
           <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
         </div>
       </header>
@@ -363,7 +295,6 @@ const App: React.FC = () => {
             isModelSpeaking={isModelSpeaking}
             avatarState={placeholderAvatarState}
             avatarExpression={modelExpression}
-            avatarSettings={avatarSettings}
           />
         </div>
       </main>

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from '@google/genai';
 
 interface DevConfig {
@@ -61,14 +62,13 @@ export const DevConsoleCore = (() => {
       return "📝 Context summary triggered (AI will compress recent state).";
     },
     "/status": () => {
-      return `⚙️ Current Config:\n- Tone: ${config.tone}\n- Model: ${config.model}\n- Persona: ${config.persona}\n- Voice: ${config.voiceEnabled ? "On" : "Off"}\n- Memory: ${config.memoryEnabled ? "Active" : "Disabled"}`;
-    },
-    // New command to toggle memory state
-    "/toggle_memory": () => {
-      config.memoryEnabled = !config.memoryEnabled;
-      notify();
-      return `🧠 Memory ${config.memoryEnabled ? "enabled" : "disabled"}`;
-    },
+      return `⚙️ Current Config:
+- Tone: ${config.tone}
+- Model: ${config.model}
+- Persona: ${config.persona}
+- Voice: ${config.voiceEnabled ? "On" : "Off"}
+- Memory: ${config.memoryEnabled ? "Active" : "Disabled"}`;
+    }
   };
 
   function handleCommand(input: string, callback?: (response: string) => void): boolean {

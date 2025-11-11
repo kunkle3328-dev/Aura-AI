@@ -77,22 +77,3 @@ export type ModelExpression = 'neutral' | 'positive' | 'inquisitive' | 'empathet
 
 // Defines the possible animation states of the AI avatar.
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
-
-// -- AVATAR CUSTOMIZATION --
-export type AvatarStyle = 'crystal' | 'orb' | 'circuit';
-export const AVATAR_STYLES: { id: AvatarStyle; name: string }[] = [
-  { id: 'crystal', name: 'Crystal' },
-  { id: 'orb', name: 'Orb' },
-  { id: 'circuit', name: 'Circuit' },
-];
-
-export type AvatarTexture = 'nebula' | 'matrix' | 'energy' | 'circuit' | 'glitch' | 'binary' | 'plasma';
-export const AVATAR_TEXTURES: { id: AvatarTexture; name: string }[] = [
-  { id: 'nebula', name: 'Nebula' },
-  { id: 'matrix', name: 'Matrix' },
-  { id: 'energy', name: 'Energy' },
-  { id: 'circuit', name: 'Circuit' },
-  { id: 'glitch', name: 'Glitch' },
-  { id: 'binary', name: 'Binary' },
-  { id: 'plasma', name: 'Plasma' },
-];

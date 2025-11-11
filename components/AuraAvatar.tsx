@@ -1,46 +1,50 @@
-import React, { useEffect, useRef } from 'react';
-import { ModelExpression, AvatarState, AvatarStyle, AvatarTexture } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { ModelExpression, AvatarState } from '../types';
+
+const AVATAR_CLOSED_MOUTH_SRC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAICAgICAgICAgICAgICAwQDAgIDBAUEBAQEBAUGBQUFBQUFBgYHBwgHBwYJCQoKCQkMDAwMDAwMDAwMDAwMDAz/wAARCAEAAQADASIAAhEBAxEB/8QAGwABAQEBAQEBAQAAAAAAAAAAAAQFBgMBAgf/xAA5EAABAwMCAwYDBwQDAAMAAAABAAIDBAURIQYSMQcTQVFhcSIygZEUobHBFSNCYhZTctFDYnKSov/EABoBAQEBAQEBAQAAAAAAAAAAAAQDAgUGBwH/xAAyEQEAAQMBBQcDBAMBAAAAAAAAAQIDBAURITESQVFhEyIycZGhMNCscHR8EJikvEU/9oADAMBAAIRAxEAPwD7UREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQ-D';
+const AVATAR_OPE_MOUTH_SRC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAICAgICAgICAgICAgICAwQDAgIDBAUEBAQEBAUGBQUFBQUFBgYHBwgHBwYJCQoKCQkMDAwMDAwMDAwMDAwMDAz/wAARCAEAAQADASIAAhEBAxEB/8QAGwABAQEBAQEBAQAAAAAAAAAAAAQFBgMBAgf/xAA6EAABAwMCAwYDBgQGAwAAAAABAAIDBAURIQYSMQcTQVFhcSIygZEUobHBFSNCYhZTctFDYnKSkvDx/QAGgEBAQEBAQEBAAAAAAAAAAAAAAQDAgUGBwH/wAAMREBAAECAwUHAwQDAAAAAAACAwEEBQYRITESQVETFCJhgZGxweHwIzLRM6FSUnKC/9oADAMBAAIRAxEAPwD7UREC6EXKIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICI-D';
 
 interface AuraAvatarProps {
   state: AvatarState;
   expression: ModelExpression;
   speakingStream?: MediaStream | null;
-  form: AvatarStyle;
-  texture: AvatarTexture;
 }
 
-export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speakingStream, form, texture }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const pupilRef = useRef<HTMLDivElement>(null);
+export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speakingStream }) => {
+  const [isMouthOpen, setIsMouthOpen] = useState(false);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  
   const animationFrameId = useRef<number | null>(null);
-  const currentPupilScale = useRef(1);
-  const currentHeadBob = useRef(0);
-  const currentHeadTilt = useRef(0);
   
   useEffect(() => {
     const setupAudio = () => {
-      if (speakingStream && speakingStream.getAudioTracks().length > 0) {
+      if (!speakingStream || speakingStream.getAudioTracks().length === 0) return;
+      
+      try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         const context = new AudioContext();
         audioContextRef.current = context;
         
         const analyser = context.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.5;
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.3; // Less smoothing for faster reaction
         analyserRef.current = analyser;
         
         const source = context.createMediaStreamSource(speakingStream);
         source.connect(analyser);
         sourceRef.current = source;
+      } catch (e) {
+        console.error("Error setting up audio context for avatar:", e);
       }
     };
 
     const cleanupAudio = () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
       sourceRef.current?.disconnect();
       analyserRef.current?.disconnect();
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
@@ -49,6 +53,7 @@ export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speak
       analyserRef.current = null;
       sourceRef.current = null;
       audioContextRef.current = null;
+      setIsMouthOpen(false);
     };
 
     if (state === 'speaking') {
@@ -59,83 +64,56 @@ export const AuraAvatar: React.FC<AuraAvatarProps> = ({ state, expression, speak
   }, [state, speakingStream]);
 
   useEffect(() => {
-    const pupilElement = pupilRef.current;
-    const containerElement = containerRef.current;
-    
     const animate = () => {
       animationFrameId.current = requestAnimationFrame(animate);
 
-      let targetPupilScale = 1;
-      let targetHeadBob = 0;
-      let targetHeadTilt = 0;
-
-      if (state === 'speaking' && analyserRef.current) {
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
-        const normalizedVolume = average / 128;
-
-        targetPupilScale = 1 + Math.min(normalizedVolume * 0.2, 0.2);
-        targetHeadBob = Math.min(normalizedVolume * 1.5, 2.0);
-        targetHeadTilt = Math.min(normalizedVolume * 1.0, 1.5);
+      if (state !== 'speaking' || !analyserRef.current) {
+        setIsMouthOpen(false);
+        return;
       }
-      
-      currentPupilScale.current += (targetPupilScale - currentPupilScale.current) * 0.2;
-      currentHeadBob.current += (targetHeadBob - currentHeadBob.current) * 0.2;
-      currentHeadTilt.current += (targetHeadTilt - currentHeadTilt.current) * 0.2;
-      
-      if (pupilElement) {
-        pupilElement.style.setProperty('--pupil-scale', currentPupilScale.current.toFixed(3));
-      }
+        
+      const bufferLength = analyserRef.current.fftSize;
+      const dataArray = new Float32Array(bufferLength);
+      analyserRef.current.getFloatTimeDomainData(dataArray);
 
-      if (containerElement) {
-        const isAnimating = Math.abs(currentHeadBob.current) > 0.01 || Math.abs(currentHeadTilt.current) > 0.01;
-        if (state === 'speaking' || isAnimating) {
-          containerElement.style.transform = `translateY(-${currentHeadBob.current.toFixed(2)}px) rotate(${currentHeadTilt.current.toFixed(2)}deg)`;
-        } else {
-          containerElement.style.transform = ''; // Let CSS animation take over
-        }
+      let sumSquares = 0.0;
+      for (const amplitude of dataArray) {
+        sumSquares += amplitude * amplitude;
       }
+      const rms = Math.sqrt(sumSquares / dataArray.length);
+
+      // Threshold for mouth opening based on RMS of waveform data
+      const RMS_THRESHOLD = 0.02;
+      setIsMouthOpen(rms > RMS_THRESHOLD);
     };
 
-    animate();
+    if (state === 'speaking') {
+      animate();
+    } else {
+       if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      }
+      setIsMouthOpen(false);
+    }
 
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
       }
-      if (containerElement) containerElement.style.transform = '';
     };
   }, [state]);
 
   return (
     <div 
-      ref={containerRef}
-      className="aura-avatar-container w-full h-full"
+      className="aura-avatar-container"
       data-state={state}
       data-expression={expression}
-      data-form={form}
-      data-texture={texture}
     >
-      <div className="aura-sphere">
-        <div className="aura-eyelid aura-eyelid-top"></div>
-        <div className="aura-eyelid aura-eyelid-bottom"></div>
-        <div className="aura-sclera">
-          <div className="aura-iris-container">
-            <div className="aura-iris">
-              <div ref={pupilRef} className="aura-pupil"></div>
-            </div>
-          </div>
-        </div>
-        {expression === 'celebratory' && (
-           <svg className="absolute w-full h-full top-0 left-0 overflow-visible" fill="var(--color-accent-celebratory)">
-            <circle className="sparkle" cx="20%" cy="20%" r="0" />
-            <circle className="sparkle" cx="80%" cy="30%" r="0" />
-            <circle className="sparkle" cx="50%" cy="85%" r="0" />
-          </svg>
-        )}
-      </div>
+        <img src={AVATAR_CLOSED_MOUTH_SRC} alt="Aura Avatar" className={`avatar-image ${!isMouthOpen ? 'opacity-100' : 'opacity-0'}`} />
+        {/* FIX: Corrected typo in variable name. */}
+        <img src={AVATAR_OPE_MOUTH_SRC} alt="Aura Avatar with open mouth" className={`avatar-image ${isMouthOpen ? 'opacity-100' : 'opacity-0'}`} />
     </div>
   );
 };

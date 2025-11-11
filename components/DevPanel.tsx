@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { DevConsoleCore } from "../utils/devConsole";
 
@@ -29,10 +30,6 @@ export default function DevPanel() {
         break;
       case "voice":
         DevConsoleCore.handleCommand(`/toggle_voice`);
-        break;
-      case "memory":
-        // Toggle memory on user interaction
-        DevConsoleCore.handleCommand(`/toggle_memory`);
         break;
       default:
         break;
@@ -99,16 +96,6 @@ export default function DevPanel() {
               className="mr-2 w-4 h-4 rounded text-[var(--color-accent)] bg-[var(--color-bg-tertiary)] border-[var(--color-border)] focus:ring-[var(--color-focus-ring)]"
             />
             Voice Enabled
-          </label>
-          {/* Memory toggle control */}
-          <label className="flex items-center mb-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={config.memoryEnabled}
-              onChange={() => updateConfig("memory", null)}
-              className="mr-2 w-4 h-4 rounded text-[var(--color-accent)] bg-[var(--color-bg-tertiary)] border-[var(--color-border)] focus:ring-[var(--color-focus-ring)]"
-            />
-            Memory Enabled
           </label>
 
           <div className="flex gap-2 mt-4">
