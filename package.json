@@ -2,7 +2,7 @@
   "name": "aura-ai",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js",
+  "main": "expo/AppEntry.js", 
   "scripts": {
     "start": "expo start --web",
     "android": "expo run:android",
