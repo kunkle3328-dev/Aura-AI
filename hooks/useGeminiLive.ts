@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, LiveConnectParameters, FunctionDeclaration, Type } from '@google/genai';
 import { ConnectionState, TranscriptEntry, InterimTranscript, PrebuiltVoice, ModelExpression, Citation, THEMES, Theme } from '../types';
-import { createBlob, decode, pcmToWav } from '../utils/audioUtils';
+import { createBlob, decode, decodeAudioData } from '../utils/audioUtils';
 
 // Configuration constants
 const INPUT_SAMPLE_RATE = 16000;
@@ -63,7 +63,8 @@ export const useGeminiLive = (
   const [inputAudioStream, setInputAudioStream] = useState<MediaStream | null>(null);
   const [isModelThinking, setIsModelThinking] = useState(false);
   const [modelExpression, setModelExpression] = useState<ModelExpression>('neutral');
-  const [audioQueue, setAudioQueue] = useState<string[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
@@ -78,15 +79,46 @@ export const useGeminiLive = (
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
   const aiRef = useRef<GoogleGenAI | null>(null);
 
+  // --- Web Audio API refs for output playback ---
+  const outputAudioContextRef = useRef<AudioContext | null>(null);
+  const outputNodeRef = useRef<GainNode | null>(null);
+  const analyserNodeRef = useRef<AnalyserNode | null>(null);
+  const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const nextStartTimeRef = useRef<number>(0);
+
   useEffect(() => {
     aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   }, []);
-
-  const enqueueAudio = useCallback((base64Data: string) => {
+  
+  const playAudio = useCallback(async (base64Data: string) => {
+    if (!outputAudioContextRef.current || !outputNodeRef.current || !analyserNodeRef.current) return;
+    const audioContext = outputAudioContextRef.current;
+    
+    // Resume context if it's suspended
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
     const decodedBytes = decode(base64Data);
-    const wavBlob = pcmToWav(decodedBytes, OUTPUT_SAMPLE_RATE, 1, 16);
-    const url = URL.createObjectURL(wavBlob);
-    setAudioQueue(prev => [...prev, url]);
+    const audioBuffer = await decodeAudioData(decodedBytes, audioContext, OUTPUT_SAMPLE_RATE, 1);
+    
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(analyserNodeRef.current);
+
+    const currentTime = audioContext.currentTime;
+    const startTime = Math.max(currentTime, nextStartTimeRef.current);
+    source.start(startTime);
+    nextStartTimeRef.current = startTime + audioBuffer.duration;
+    
+    audioSourcesRef.current.add(source);
+    setIsSpeaking(true);
+    source.onended = () => {
+      audioSourcesRef.current.delete(source);
+      if (audioSourcesRef.current.size === 0) {
+        setIsSpeaking(false);
+      }
+    };
   }, []);
 
   const speakConfirmation = useCallback(async (text: string) => {
@@ -104,12 +136,12 @@ export const useGeminiLive = (
         });
         const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (audioData) {
-            enqueueAudio(audioData);
+            playAudio(audioData);
         }
     } catch (error) {
         console.error("Failed to speak confirmation:", error);
     }
-  }, [voice, enqueueAudio]);
+  }, [voice, playAudio]);
 
   const cleanup = useCallback(() => {
     inputAudioContextRef.current?.close().catch(console.error);
@@ -117,15 +149,21 @@ export const useGeminiLive = (
     mediaStreamSourceRef.current?.disconnect();
     inputAudioStream?.getTracks().forEach(track => track.stop());
     
-    audioQueue.forEach(url => URL.revokeObjectURL(url));
-    setAudioQueue([]);
-
+    outputAudioContextRef.current?.close().catch(console.error);
+    audioSourcesRef.current.forEach(source => source.stop());
+    audioSourcesRef.current.clear();
+    
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     if (videoStreamIntervalRef.current) clearInterval(videoStreamIntervalRef.current);
 
     inputAudioContextRef.current = null;
     scriptProcessorRef.current = null;
     mediaStreamSourceRef.current = null;
+    outputAudioContextRef.current = null;
+    outputNodeRef.current = null;
+    analyserNodeRef.current = null;
+    setAnalyserNode(null);
+    nextStartTimeRef.current = 0;
     sessionPromiseRef.current = null;
     videoStreamIntervalRef.current = null;
     videoElementRef.current = null;
@@ -133,7 +171,8 @@ export const useGeminiLive = (
     setInputAudioStream(null);
     setIsModelThinking(false);
     setModelExpression('neutral');
-  }, [inputAudioStream, audioQueue]);
+    setIsSpeaking(false);
+  }, [inputAudioStream]);
 
   const clearTranscript = useCallback(() => {
     setTranscript([]);
@@ -143,17 +182,6 @@ export const useGeminiLive = (
     setModelExpression('neutral');
   }, []);
 
-  const dequeueAudio = useCallback(() => {
-    setAudioQueue(prev => {
-      const newQueue = [...prev];
-      const shifted = newQueue.shift();
-      if (shifted) {
-        URL.revokeObjectURL(shifted);
-      }
-      return newQueue;
-    });
-  }, []);
-  
   const analyzeAndSetExpression = (text: string) => {
     const lowerCaseText = text.toLowerCase();
     if (CELEBRATORY_KEYWORDS.some(kw => lowerCaseText.includes(kw))) setModelExpression('celebratory');
@@ -181,6 +209,22 @@ export const useGeminiLive = (
             }
         }
         
+        // --- Setup Output Audio Pipeline ---
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: OUTPUT_SAMPLE_RATE });
+        const gainNode = audioCtx.createGain();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        
+        // Connect the audio graph: analyser -> gain -> destination
+        // The source nodes will be connected to the analyser dynamically.
+        analyser.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        outputAudioContextRef.current = audioCtx;
+        outputNodeRef.current = gainNode;
+        analyserNodeRef.current = analyser;
+        setAnalyserNode(analyser);
+
         const constraints = {
             audio: true,
             video: isCameraOn ? { facingMode: cameraFacingMode } : false
@@ -325,14 +369,14 @@ export const useGeminiLive = (
                 
                 const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                 if (audioData) {
-                    enqueueAudio(audioData);
+                    playAudio(audioData);
                 }
 
                 if (message.serverContent?.interrupted) {
-                    // This logic is now handled by the <audio> element's natural behavior
-                    // when its `src` is changed. We can clear our queue.
-                    audioQueue.forEach(url => URL.revokeObjectURL(url));
-                    setAudioQueue([]);
+                    audioSourcesRef.current.forEach(source => source.stop());
+                    audioSourcesRef.current.clear();
+                    nextStartTimeRef.current = 0;
+                    setIsSpeaking(false);
                 }
             },
             onerror: (e) => { console.error('Gemini Live Error:', e); setConnectionState('error'); cleanup(); },
@@ -354,7 +398,7 @@ export const useGeminiLive = (
         setConnectionState('error');
         cleanup();
     }
-  }, [connectionState, cleanup, voice, isCameraOn, isSearchEnabled, currentInputMode, onToggleCamera, onSwitchInputMode, onChangeTheme, onNewConversation, speakConfirmation, cameraFacingMode, systemInstruction, clearTranscript, enqueueAudio, audioQueue]);
+  }, [connectionState, cleanup, voice, isCameraOn, isSearchEnabled, currentInputMode, onToggleCamera, onSwitchInputMode, onChangeTheme, onNewConversation, speakConfirmation, cameraFacingMode, systemInstruction, clearTranscript, playAudio]);
   
   const disconnect = useCallback(async () => {
     if (sessionPromiseRef.current) {
@@ -377,5 +421,5 @@ export const useGeminiLive = (
     };
   }, [connectionState, disconnect]);
 
-  return { connectionState, transcript, interimTranscript, connect, disconnect, clearTranscript, inputAudioStream, isModelThinking, modelExpression, audioQueue, dequeueAudio };
+  return { connectionState, transcript, interimTranscript, connect, disconnect, clearTranscript, inputAudioStream, isModelThinking, modelExpression, isSpeaking, analyserNode };
 };

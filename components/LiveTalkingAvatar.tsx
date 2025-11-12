@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 type LiveTalkingAvatarProps = {
-  /** <audio> element that plays the AI voice */
-  audioRef: React.RefObject<HTMLAudioElement>;
+  /** A Web Audio API AnalyserNode to read volume from */
+  analyserNode: AnalyserNode | null;
   /** Closed-mouth avatar image */
   closedSrc: string;
   /** Open-mouth avatar image. If omitted, closedSrc is reused. */
@@ -12,116 +12,77 @@ type LiveTalkingAvatarProps = {
   className?: string;
 };
 
-// This registry ensures that we only ever create one AudioContext and source
-// for a given HTMLAudioElement. This is critical for preventing errors in
-// React's StrictMode, where components may be mounted and unmounted for debugging.
-const audioNodeRegistry = new WeakMap<HTMLAudioElement, {
-  ctx: AudioContext;
-  source: MediaElementAudioSourceNode;
-  analyser: AnalyserNode;
-}>();
-
-
 export const LiveTalkingAvatar: React.FC<LiveTalkingAvatarProps> = ({
-  audioRef,
+  analyserNode,
   closedSrc,
   openSrc,
   size = 220,
   className = '',
 }) => {
   const [mouthOpen, setMouthOpen] = useState(0); // 0–1
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const frameRef = useRef<number | null>(null);
 
   const openImage = openSrc || closedSrc;
   const pixelSize = `${size}px`;
 
   useEffect(() => {
-    const audioEl = audioRef.current;
-    if (!audioEl) return;
-
-    let nodes = audioNodeRegistry.get(audioEl);
-
-    if (!nodes) {
-        try {
-            const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
-            const ctx = new Ctor() as AudioContext;
-            const source = ctx.createMediaElementSource(audioEl);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.05;
-            source.connect(analyser);
-            analyser.connect(ctx.destination);
-
-            nodes = { ctx, source, analyser };
-            audioNodeRegistry.set(audioEl, nodes);
-            
-            // Resume on first user gesture (mic tap, etc.)
-            const resumeCtx = () => {
-                if (ctx.state === 'suspended') {
-                    ctx.resume().catch(console.warn);
-                }
-            };
-            window.addEventListener('click', resumeCtx, { once: true });
-            window.addEventListener('touchstart', resumeCtx, { once: true });
-
-        } catch (e) {
-            console.error('Error wiring audio to LiveTalkingAvatar:', e);
-            return; // Exit if wiring fails
-        }
-    }
-    
-    analyserRef.current = nodes.analyser;
-
-    // The cleanup should only cancel the animation frame, not destroy the
-    // shared audio nodes, which are now tied to the audio element's lifecycle.
-    return () => {
-        if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (!analyserNode) {
+      // If no analyser is provided (e.g., not connected yet),
+      // ensure the mouth gently closes and cancel any existing animation frame.
+      setMouthOpen(prev => prev * 0.7);
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
-    };
-  }, [audioRef]);
+      }
+      return;
+    }
 
-  useEffect(() => {
-    const analyser = analyserRef.current;
-    if (!analyser) return;
+    // Use frequency data for more stable volume detection, which is better for speech.
+    const bufferLength = analyserNode.frequencyBinCount;
+    const data = new Uint8Array(bufferLength);
 
-    const bufferLength = analyser.fftSize;
-    const data = new Float32Array(bufferLength);
-
-    const MIN_RMS = 0.003; // sensitivity
-    const MAX_RMS = 0.05;
+    // --- Lip-sync sensitivity thresholds ---
+    // These values may require tuning for different voices or microphone sensitivities.
+    const MIN_VOLUME = 10; // The volume level considered to be silence.
+    const MAX_VOLUME = 120; // The volume level that maps to a fully open mouth.
+    
+    // --- Smoothing factors ---
+    // Asymmetric smoothing makes the mouth open faster and close slower, which looks more natural.
+    const SMOOTHING_UP = 0.5;   // How quickly the mouth opens (lower is faster).
+    const SMOOTHING_DOWN = 0.7; // How quickly the mouth closes (higher is slower).
 
     const loop = () => {
       frameRef.current = requestAnimationFrame(loop);
-      const audioEl = audioRef.current;
-      if (!audioEl || audioEl.paused || audioEl.muted) {
-        setMouthOpen(prev => prev * 0.7); // gently close when quiet
-        return;
-      }
-
-      analyser.getFloatTimeDomainData(data);
+      
+      analyserNode.getByteFrequencyData(data);
+      
       let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        const v = data[i];
-        sum += v * v;
+      // Summing up the lower half of the frequency spectrum, which is where most voice energy is.
+      for (let i = 0; i < bufferLength / 2; i++) {
+        sum += data[i];
       }
-      const rms = Math.sqrt(sum / data.length);
+      const averageVolume = sum / (bufferLength / 2);
 
-      let openness = (rms - MIN_RMS) / (MAX_RMS - MIN_RMS);
-      if (openness < 0) openness = 0;
-      if (openness > 1) openness = 1;
-
-      // smooth to avoid jitter
-      setMouthOpen(prev => prev * 0.5 + openness * 0.5);
+      // Calculate mouth openness (0-1) based on the current volume.
+      let openness = (averageVolume - MIN_VOLUME) / (MAX_VOLUME - MIN_VOLUME);
+      openness = Math.max(0, Math.min(1, openness)); // Clamp between 0 and 1.
+      
+      // Apply smoothing to the openness value to prevent jitter.
+      setMouthOpen(prev => {
+        const smoothing = openness > prev ? SMOOTHING_UP : SMOOTHING_DOWN;
+        return prev * smoothing + openness * (1 - smoothing);
+      });
     };
 
     loop();
 
     return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
     };
-  }, [audioRef]);
+  }, [analyserNode]); // Rerun effect if the analyserNode changes.
 
   return (
     <div

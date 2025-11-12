@@ -14,7 +14,7 @@ interface ConversationViewProps {
   isCameraOn: boolean;
   avatarState: AvatarState;
   avatarExpression: ModelExpression;
-  audioRef: React.RefObject<HTMLAudioElement>;
+  analyserNode: AnalyserNode | null;
 }
 
 const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: boolean; citations?: Citation[]; }> = ({ speaker, text, isInterim = false, citations }) => {
@@ -64,7 +64,7 @@ const MessageBubble: React.FC<{ speaker: Speaker; text: string; isInterim?: bool
   );
 };
 
-export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, connectionState, isCameraOn, avatarState, avatarExpression, audioRef }) => {
+export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, interimTranscript, stream, connectionState, isCameraOn, avatarState, avatarExpression, analyserNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollEnabled = useRef(true);
 
@@ -99,7 +99,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
               style={{ width: '280px', height: '280px' }}
             >
               <LiveTalkingAvatar
-                audioRef={audioRef}
+                analyserNode={analyserNode}
                 closedSrc={AVATAR_IMAGE_SRC}
                 openSrc={AVATAR_IMAGE_SRC}
                 size={280}
@@ -118,7 +118,7 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ transcript, 
             style={{ width: '220px', height: '220px' }}
           >
             <LiveTalkingAvatar
-              audioRef={audioRef}
+              analyserNode={analyserNode}
               closedSrc={AVATAR_IMAGE_SRC}
               openSrc={AVATAR_IMAGE_SRC}
               size={220}

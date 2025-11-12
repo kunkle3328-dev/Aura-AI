@@ -20,7 +20,7 @@ const getSystemInstruction = (config: any) => {
 };
 
 const App: React.FC = () => {
-  const [voice, setVoice] = useState<PrebuiltVoice>('Puck');
+  const [voice, setVoice] = useState<PrebuiltVoice>('Kore');
   const [theme, setTheme] = useState<Theme>('theme-aetherium-wave');
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
@@ -31,10 +31,6 @@ const App: React.FC = () => {
   const [textTranscript, setTextTranscript] = useState<TranscriptEntry[]>([]);
   const [textChat, setTextChat] = useState<Chat | null>(null);
   const [isTextModelThinking, setIsTextModelThinking] = useState(false);
-
-  // --- New Audio Playback State ---
-  const ttsAudioRef = useRef<HTMLAudioElement>(null);
-  const [isTtsPlaying, setIsTtsPlaying] = useState(false);
 
   useEffect(() => {
     const unsubscribe = DevConsoleCore.subscribe(setDevConfig);
@@ -56,36 +52,13 @@ const App: React.FC = () => {
     inputAudioStream,
     isModelThinking,
     modelExpression,
-    audioQueue,
-    dequeueAudio,
+    isSpeaking,
+    analyserNode,
   } = useGeminiLive(
     voice, isCameraOn, isSearchEnabled, inputMode,
     handleToggleCamera, handleToggleInputMode, setTheme, handleNewConversation,
     cameraFacingMode, getSystemInstruction(devConfig)
   );
-
-  // --- Robust Audio Queue Playback Logic ---
-  useEffect(() => {
-    const audioEl = ttsAudioRef.current;
-    if (!audioEl) return;
-
-    const processQueue = () => {
-      if (audioEl.paused && audioQueue.length > 0) {
-        const nextUrl = audioQueue[0];
-        audioEl.src = nextUrl;
-        audioEl.play().catch(e => {
-          console.error("Audio playback failed:", e);
-          // If play fails, dequeue the bad URL and the effect will try again.
-          dequeueAudio();
-        });
-      }
-    };
-    processQueue();
-  }, [audioQueue, dequeueAudio]);
-
-  const handleAudioEnded = useCallback(() => {
-    dequeueAudio();
-  }, [dequeueAudio]);
   
   function handleToggleCamera() {
     if (connectionState === 'idle' || connectionState === 'closed' || connectionState === 'error') {
@@ -177,7 +150,7 @@ const App: React.FC = () => {
   if (inputMode === 'voice') {
     if (isModelThinking) avatarState = 'thinking';
     else if (isUserSpeaking) avatarState = 'listening';
-    else if (isTtsPlaying) avatarState = 'speaking';
+    else if (isSpeaking) avatarState = 'speaking';
   } else {
     if (isTextModelThinking) avatarState = 'thinking';
   }
@@ -212,7 +185,7 @@ const App: React.FC = () => {
             isCameraOn={isCameraOn}
             avatarState={avatarState}
             avatarExpression={modelExpression}
-            audioRef={ttsAudioRef}
+            analyserNode={analyserNode}
           />
         </div>
       </main>
@@ -235,13 +208,6 @@ const App: React.FC = () => {
         />
       </footer>
       <audio id="audio-primer" playsInline style={{ display: 'none' }}></audio>
-      <audio 
-        ref={ttsAudioRef} 
-        onEnded={handleAudioEnded} 
-        onPlay={() => setIsTtsPlaying(true)}
-        onPause={() => setIsTtsPlaying(false)}
-        style={{ display: 'none' }}
-      ></audio>
       <DevPanel />
     </div>
   );
